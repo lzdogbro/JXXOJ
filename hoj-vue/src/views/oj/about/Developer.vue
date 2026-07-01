@@ -2,10 +2,10 @@
   <div>
     <div class="intr-center">
       <paper-card type="server">
-        <h1 class="text-darken">HOJ</h1>
+        <h1 class="text-darken">JXXOJ</h1>
         <h1>
-          <a href="https://gitee.com/himitzh0730/hoj" target="_blank"
-            >Hcode Online Judge</a
+          <a href="https://github.com/lzdogbro/JXXOJ" target="_blank"
+            >Jingxiaoxiao Online Judge</a
           >
         </h1>
         <p>
@@ -17,6 +17,12 @@
         <p>
           {{ $t('m.Group_Function_Development_Contributor') }} / 冷蕴
           <a href="https://github.com/IUaenaSong" class="icon" target="_blank"
+            ><i class="fa fa-github"></i>
+          </a>
+        </p>
+        <p>
+          {{ $t('m.Full_Stack_Secondary_Development_Contributor') }} / lzdogbro
+          <a href="https://github.com/lzdogbro" class="icon" target="_blank"
             ><i class="fa fa-github"></i>
           </a>
         </p>

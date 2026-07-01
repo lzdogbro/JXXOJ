@@ -47,20 +47,77 @@ HOJ 是一个基于 Vue 和 Spring Boot、Spring Cloud Alibaba 构建的**前后
 
 ## 二、快速部署
 
-### 基于 Docker Compose 部署（推荐）
+### 方式一：使用 deploy.sh 一键部署（推荐）
+
+项目根目录下的 `deploy.sh` 脚本可以完成**构建 → 打包 → 部署**的全流程。
+
+```bash
+# 首次部署（初始化部署目录）
+./deploy.sh init
+
+# 一键构建 + 部署（最常用）
+./deploy.sh deploy
+
+# 仅构建（后端 JAR + 前端 dist）
+./deploy.sh build
+
+# 仅同步构建产物到 myhoj-deploy
+./deploy.sh sync
+
+# 仅重启容器
+./deploy.sh restart
+
+# 查看容器状态
+./deploy.sh status
+```
+
+**完整流程说明**：
+
+```bash
+# 1. 初始化 myhoj-deploy 目录（含 docker-compose.yml、Dockerfile、nginx 配置等）
+./deploy.sh init
+
+# 2. 构建后端 JAR
+#    cd hoj-springboot && mvn package -DskipTests -q
+
+# 3. 构建前端 dist
+#    cd hoj-vue && NODE_OPTIONS=--openssl-legacy-provider npm run build
+
+# 4. 复制构建产物到 myhoj-deploy
+#    - hoj-backend-4.6.jar  → src/backend/
+#    - dist/*               → src/frontend/html/
+#    - hoj-scrollBoard/*    → src/frontend/scrollBoard/
+#    - hoj.sql              → src/mysql/
+
+# 5. 停止旧容器 + 重新构建镜像 + 启动
+#    docker-compose down && docker-compose up -d --build
+./deploy.sh deploy
+```
+
+**关键端口**：
+
+| 服务 | 端口 |
+|------|------|
+| 前端 Nginx | 8003 |
+| 后端 API | 6688 |
+| MySQL | 3391 |
+| Redis | 6380 |
+| Nacos | 8849 |
+
+**环境变量**（可选配置）：
+
+```bash
+export MYHOJ_DEPLOY_DIR=/path/to/myhoj-deploy  # 部署目录路径（默认: ../myhoj-deploy）
+export BACKEND_JAR_NAME=hoj-backend-4.6.jar    # 后端 JAR 文件名
+```
+
+### 方式二：基于原生 hoj-deploy 部署
 
 部署文档：[https://docs.hdoi.cn/deploy/docker](https://docs.hdoi.cn/deploy/docker)
 
 部署仓库：[https://gitee.com/himitzh0730/hoj-deploy](https://gitee.com/himitzh0730/hoj-deploy)
 
-### 更新方式
-
-在 `docker-compose.yml` 所在目录下执行：
-
-```bash
-docker-compose pull    # 拉取最新镜像
-docker-compose up -d   # 重新启动服务
-```
+> ⚠️ **注意**：原生 hoj-deploy 使用官方 Docker 镜像，不包含私聊、PK 对战等二开功能。如需使用二开版本，请使用方式一中的 `deploy.sh`。
 
 ---
 

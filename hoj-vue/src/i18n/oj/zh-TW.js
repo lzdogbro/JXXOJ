@@ -523,6 +523,7 @@ export const m = {
   // /views/oj/about/Developer.vue
   Leader_BackEnd_FrontEnd_Engineer: '主導 & 後端 | 前端 開發者',
   Group_Function_Development_Contributor:'團隊功能開發貢獻者',
+  Full_Stack_Secondary_Development_Contributor:'全棧二次開發貢獻者',
   Distributed: '分散式',
   Distributed_Desc: '前後端分離，支援判題微服務叢集',
   Customization: '定製化',

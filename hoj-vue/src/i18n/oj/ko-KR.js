@@ -523,6 +523,7 @@ export const m = {
   // /views/oj/about/Developer.vue
   Leader_BackEnd_FrontEnd_Engineer: '리더 & 백엔드 | 프론트엔드 엔지니어',
   Group_Function_Development_Contributor:'그룹 기능 개발 기여자',
+  Full_Stack_Secondary_Development_Contributor:'풀스택 2차 개발 기여자',
   Distributed: '분산형',
   Distributed_Desc: '프론트엔드와 백엔드 분리, 채점 마이크로서비스 클러스터 지원',
   Customization: '맞춤화',

@@ -523,6 +523,7 @@ export const m = {
   // /views/oj/about/Developer.vue
   Leader_BackEnd_FrontEnd_Engineer: 'リーダー & バックエンド | フロントエンド エンジニア',
   Group_Function_Development_Contributor:'チーム機能開発貢献者',
+  Full_Stack_Secondary_Development_Contributor:'フルスタック二次開発貢献者',
   Distributed: '分散型',
   Distributed_Desc: 'フロントエンドとバックエンドの分離、ジャッジマイクロサービスクラスタのサポート',
   Customization: 'カスタマイズ',
