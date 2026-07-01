@@ -3,6 +3,8 @@
 ![logo](./logo.png)
 
 > An open source online judge system based on SpringBoot, SpringCloud Alibaba and Vue.js !
+> 
+> **JXXOJ** — A secondary development fork of [HimitZH/HOJ](https://github.com/HimitZH/HOJ), maintained by [lzdogbro](https://github.com/lzdogbro).
 
 [![Java](https://img.shields.io/badge/Java-1.8-informational)](http://openjdk.java.net/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.2.6.RELEASE-success)](https://spring.io/projects/spring-boot)
@@ -19,20 +21,34 @@
 
 ## Overview
 
+HOJ is an open-source online judge system based on Vue, Spring Boot, and Spring Cloud Alibaba, featuring a **front-end / back-end separation** and **distributed architecture**.
+
+This project (**JXXOJ**) is a secondary development fork of [HimitZH/HOJ](https://github.com/HimitZH/HOJ), maintained by [lzdogbro](https://github.com/lzdogbro). It preserves all original features while adding PK battles, private chat, and various improvements.
+
+### Original Features
+
 - One click deployment based on **Docker** and **Docker-compose**
 - Multi-language support: **C, C++, C#, Python, PyPy, Go, Java, JavaScript, PHP, Ruby, Rust**
 - Remote judge support: **HDU, POJ, Codeforces (including GYM), AtCoder, SPOJ, LIBRE**
 - Perfect evaluation mode: **General, Special, Interactive, Self-test, Subtask, File IO**
 - Perfect contest function: **Star team, Attention team, External Rank, Scroll Board**
-- **Support group and discussion area**
-- **⚡ PK Battle**: Real-time 1v1 programming battles with an ELO-like scoring system
-- **💬 Private Chat**: One-on-one instant messaging between users
+- Support **group and discussion area**
+
+### Secondary Development Additions
+
+- **⚡ PK Battle**: Real-time 1v1 programming battles with scoring system, invitations, timer, surrender, and match history
+- **💬 Private Chat**: One-on-one instant messaging with contacts, unread badges, and polling
+- **🚀 deploy.sh**: Custom one-click build-and-deploy script tailored for this fork
+- **🌐 Extended i18n**: Added Traditional Chinese (zh-TW), Japanese (ja-JP), Korean (ko-KR)
+- **🐳 CDN Migration**: Migrated static resources to Cloudflare / jsdelivr for better global access
+- **🐛 Bug Fixes**: Fixed Redis distributed lock and PK deadlock issues
+- **🎨 Rebranding**: JXXOJ branding, whale icons, updated about page
 
 |            Online Demo             |                Documents                 |               Repositories               |         QQ Group          |
 | :--------------------------------: | :--------------------------------------: | :--------------------------------------: | :-----------------------: |
 | [https://hdoi.cn](https://hdoi.cn) | [https://docs.hdoi.cn](https://docs.hdoi.cn) | [GitHub](https://github.com/HimitZH/HOJ) · [Gitee](https://gitee.com/himitzh0730/hoj) | 598587305（Full）· 743568562 |
 
-## New Features
+## Secondary Development Features
 
 ### PK Battle (1v1 Real-time Coding Duel)
 
@@ -289,7 +305,7 @@ Modern browsers (Chrome, Firefox) and Internet Explorer 10+. Mobile browsers are
 - If you found any bug, please feel free to contact me (DogBro lzzhaoning@163.com) or open an issue
 - Thanks to everyone that contributes to this project
 
-**Acknowledgments**: Thanks to [HimitZH](https://github.com/HimitZH) for the excellent original project, and all contributors for their hard work.
+**Acknowledgments**: This project is a secondary development fork of [HimitZH/HOJ](https://github.com/HimitZH/HOJ). Thanks to [HimitZH](https://github.com/HimitZH) for the excellent original project, and all contributors for their hard work.
 
 ## License
 

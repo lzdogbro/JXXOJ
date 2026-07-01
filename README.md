@@ -1,5 +1,7 @@
 # Hcode Online Judge（HOJ）
 
+> **JXXOJ** — 基于 [HimitZH/HOJ](https://github.com/HimitZH/HOJ) 的二次开发（Fork）版本，由 [lzdogbro](https://github.com/lzdogbro) 维护。
+
 ![logo](./logo.png)
 
 [![Java](https://img.shields.io/badge/Java-1.8-informational)](http://openjdk.java.net/)
@@ -19,16 +21,26 @@
 
 HOJ 是一个基于 Vue 和 Spring Boot、Spring Cloud Alibaba 构建的**前后端分离、分布式架构**的在线评测系统（Online Judge）。
 
+本项目（JXXOJ）是 HOJ 的 **Fork 二次开发版本**，由 [lzdogbro](https://github.com/lzdogbro) 在原版 [HimitZH/HOJ](https://github.com/HimitZH/HOJ) 的基础上进行功能增强与维护。在保留原版所有功能的同时，新增了 PK 对战、私聊系统等特色功能，并进行了多项优化与问题修复。
+
 ### 核心特性
 
+**原版功能：**
 - **多语言支持**：支持 C、C++、C#、Python、PyPy、Go、Java、JavaScript、PHP、Ruby、Rust 等多种编程语言的评测
 - **Remote Judge（远程评测）**：支持 HDU、POJ、Codeforces（含 GYM）、AtCoder、SPOJ、LIBRE 的远程评测
 - **多端适配**：支持 PC 端和移动端浏览，拥有讨论区与站内消息系统
 - **训练 & 团队**：支持私有训练、公开训练（题单）和团队协作功能
 - **丰富的评测模式**：普通测评、特殊测评（SPJ）、交互测评、在线自测、子任务分组评测、文件 IO
 - **完善的比赛系统**：支持 ACM/OI 赛制，支持打星队伍、关注队伍、外榜、滚榜等功能
-- **⚡ PK 对战**：支持实时 1v1 编程对战，积分排名系统，让刷题不再枯燥
-- **💬 私聊系统**：支持用户间一对一私信交流，方便讨论与协作
+
+**二次开发新增：**
+- **⚡ PK 对战**：实时 1v1 编程对战，积分排名系统，支持邀请、倒计时、认输、对战历史
+- **💬 私聊系统**：用户间一对一私信交流，联系人列表，未读消息提醒
+- **🚀 一键部署脚本**：自定义 `deploy.sh`，支持构建 → 打包 → 部署全流程自动化
+- **🌐 多语言扩展**：新增繁体中文（zh-TW）、日语（ja-JP）、韩语（ko-KR）国际化支持
+- **🐳 CDN 迁移**：静态资源 CDN 迁移至 Cloudflare / jsdelivr，提升国内访问速度
+- **🐛 Bug 修复**：修复 Redis 分布式锁问题、PK 对战死锁等关键 bug
+- **🎨 品牌更新**：JXXOJ 品牌标识，鲸小小图标替换，关于页面更新
 
 |               在线 Demo               |                   在线文档                   |            仓库地址             |           QQ 群           |
 | :--------------------------------: | :--------------------------------------: | :--------------------------------------: | :---------------------: |
@@ -121,7 +133,7 @@ export BACKEND_JAR_NAME=hoj-backend-4.6.jar    # 后端 JAR 文件名
 
 ---
 
-## 三、新增功能说明
+## 三、二次开发新增功能详情
 
 ### PK 对战（1v1 实时编程对战）
 
@@ -364,4 +376,4 @@ HOJ/
 
 欢迎提交 Issue 和 Pull Request！如有任何问题，欢迎联系我（狗哥 lzzhaoning@163.com）,感谢您的关心。
 
-**致谢**：感谢 [HimitZH](https://github.com/HimitZH) 提供的优秀原项目，以及所有贡献者的辛勤付出。
+**致谢**：本项目基于 [HimitZH/HOJ](https://github.com/HimitZH/HOJ) 进行二次开发，感谢 [HimitZH](https://github.com/HimitZH) 提供的优秀原项目，以及所有贡献者的辛勤付出。
