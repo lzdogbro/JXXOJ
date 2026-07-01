@@ -10,8 +10,12 @@ const state = {
     reply:0,
     like:0,
     sys:0,
-    mine:0
-  }
+    mine:0,
+    chat:0,
+    pk:0
+  },
+  pkInvites: [],
+  contentReady: false,
 }
 
 const getters = {
@@ -76,6 +80,12 @@ const mutations = {
   substractUnreadMessageCount(state,{needSubstractMsg}){
     // 负数也没关系
     state.unreadMessage[needSubstractMsg.name] = state.unreadMessage[needSubstractMsg.name]-needSubstractMsg.num;
+  },
+  setPkInvites(state, invites) {
+    state.pkInvites = invites;
+  },
+  setContentReady(state, ready) {
+    state.contentReady = ready;
   },
   changeUserAuthInfo(state, {roles}){
     state.userInfo.roleList = roles;

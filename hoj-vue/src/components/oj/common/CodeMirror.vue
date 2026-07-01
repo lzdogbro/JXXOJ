@@ -39,7 +39,7 @@
               ></el-button>
             </el-tooltip>
           </span>
-          <span v-if="isAuthenticated && !submitDisabled">
+          <span v-if="isAuthenticated && !submitDisabled && !isPkMode">
             <el-tooltip
               :content="$t('m.Get_Recently_Passed_Code')"
               placement="top"
@@ -70,6 +70,7 @@
                 icon="el-icon-upload"
                 @click="onUploadFile"
                 size="small"
+                v-if="!isPkMode"
               ></el-button>
             </el-tooltip>
           </span>
@@ -607,6 +608,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    isPkMode: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -690,6 +695,15 @@ export default {
       //   });
       // }
     });
+    // PK模式下禁用粘贴
+    if (this.isPkMode) {
+      this.editor.on('paste', (cmInstance, event) => {
+        event.preventDefault();
+        if (this.$t) {
+          this.$message.warning(this.$t('m.PK_No_Paste'));
+        }
+      });
+    }
     this.$nextTick(() => {
       this.editor.refresh();
     })

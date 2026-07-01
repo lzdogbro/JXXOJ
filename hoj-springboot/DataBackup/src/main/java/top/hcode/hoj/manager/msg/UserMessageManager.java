@@ -64,7 +64,7 @@ public class UserMessageManager {
         AccountProfile userRolesVo = (AccountProfile) SecurityUtils.getSubject().getPrincipal();
         UserUnreadMsgCountVO userUnreadMsgCount = msgRemindEntityService.getUserUnreadMsgCount(userRolesVo.getUid());
         if (userUnreadMsgCount == null) {
-            userUnreadMsgCount = new UserUnreadMsgCountVO(0, 0, 0, 0, 0);
+            userUnreadMsgCount = new UserUnreadMsgCountVO(0, 0, 0, 0, 0, 0);
         }
         return userUnreadMsgCount;
     }

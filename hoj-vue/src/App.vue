@@ -768,6 +768,38 @@ footer h1 {
   color: #3498db;
   font-size: 13px;
 }
+/* PK邀请通知按钮样式 */
+.pk-invite-notify {
+  border-left: 4px solid #e6a23c;
+}
+.pk-invite-notify-body p {
+  margin: 0 0 10px 0;
+  line-height: 1.5;
+  word-break: break-all;
+}
+.pk-invite-notify-actions {
+  display: flex;
+  gap: 8px;
+}
+.pk-notify-btn {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: opacity 0.2s;
+}
+.pk-notify-btn:hover {
+  opacity: 0.85;
+}
+.pk-notify-accept {
+  background: #409eff;
+  color: #fff;
+}
+.pk-notify-dismiss {
+  background: #909399;
+  color: #fff;
+}
 </style>
 <style>
 .markdown-body pre {

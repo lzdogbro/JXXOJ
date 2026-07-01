@@ -57,6 +57,11 @@
             </el-tag>
           </span>
         </p>
+        <p v-if="canSendChat" style="margin-top: 10px;">
+          <el-button type="primary" size="small" icon="el-icon-s-promotion" @click="goToChat">
+            {{ $t('m.Chat_Send_Message') }}
+          </el-button>
+        </p>
         <span class="default-info" v-if="profile.school"
           ><i class="fa fa-graduation-cap" aria-hidden="true"></i>
           {{ profile.school }}</span
@@ -109,13 +114,27 @@
             </el-card>
           </el-col>
           <el-col :md="6" :sm="24">
-            <el-card shadow="always" class="rating">
+            <el-card shadow="always" class="pk-score">
               <p>
-                <i class="fa fa-user-secret" aria-hidden="true"></i>
-                {{ $t('m.UserHome_Rating') }}
+                <svg
+                  class="icon"
+                  viewBox="0 0 24 24"
+                  version="1.1"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  style="vertical-align: middle; margin-right: 4px;"
+                >
+                  <rect x="11" y="2" width="2" height="13" fill="currentColor"/>
+                  <polygon points="12,2 9,5 15,5" fill="currentColor"/>
+                  <rect x="5" y="10" width="14" height="2" rx="0.5" fill="currentColor"/>
+                  <rect x="11" y="14" width="2" height="7" fill="currentColor"/>
+                  <rect x="9" y="20" width="6" height="2" rx="1" fill="currentColor"/>
+                </svg>
+                {{ $t('m.UserHome_PK_Score') }}
               </p>
               <p class="data-number">
-                {{ profile.rating ? profile.rating : '--' }}
+                {{ profile.pkScore != null ? profile.pkScore : '--' }}
               </p>
             </el-card>
           </el-col>
@@ -253,6 +272,7 @@ export default {
         signature: '',
         total: 0,
         rating: 0,
+        pkScore: null,
         score: 0,
         solvedList: [],
         solvedGroupByDifficulty:null,
@@ -360,6 +380,25 @@ export default {
       }else{
         return list.length;
       }
+    },
+    goToChat() {
+      this.$router.push({
+        name: 'Chat',
+        query: {
+          uid: this.profile.uid,
+          username: this.profile.username,
+          nickname: this.profile.nickname,
+          avatar: this.profile.avatar
+        }
+      });
+    }
+  },
+  computed: {
+    canSendChat() {
+      let userInfo = this.$store.getters.userInfo;
+      let isAuth = this.$store.getters.isAuthenticated;
+      if (!isAuth || !this.profile.uid) return false;
+      return userInfo.uid !== this.profile.uid;
     }
   },
   watch: {
@@ -419,7 +458,7 @@ export default {
   color: #fff;
   font-size: 14px;
 }
-.rating {
+.pk-score {
   background: #dd6161;
   color: #fff;
   font-size: 14px;

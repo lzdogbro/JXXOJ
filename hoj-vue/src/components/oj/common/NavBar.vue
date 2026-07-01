@@ -165,6 +165,9 @@
                 <el-dropdown-item command="/status?onlyMine=true">{{
                   $t('m.NavBar_Submissions')
                 }}</el-dropdown-item>
+                <el-dropdown-item command="/pk-history">{{
+                  $t('m.NavBar_PK')
+                }}</el-dropdown-item>
                 <el-dropdown-item command="/setting">{{
                   $t('m.NavBar_Setting')
                 }}</el-dropdown-item>
@@ -197,7 +200,8 @@
                       unreadMessage.reply > 0 ||
                       unreadMessage.like > 0 ||
                       unreadMessage.sys > 0 ||
-                      unreadMessage.mine > 0
+                      unreadMessage.mine > 0 ||
+                      unreadMessage.chat > 0
                   "
                   width="10"
                   height="10"
@@ -236,6 +240,12 @@
                   <span>{{ $t('m.MineMsg') }}</span>
                   <span class="drop-msg-count" v-if="unreadMessage.mine > 0">
                     <MsgSvg :total="unreadMessage.mine"></MsgSvg>
+                  </span>
+                </el-dropdown-item>
+                <el-dropdown-item command="/chat" divided>
+                  <span>{{ $t('m.NavBar_Chat') }}</span>
+                  <span class="drop-msg-count" v-if="unreadMessage.chat > 0">
+                    <MsgSvg :total="unreadMessage.chat"></MsgSvg>
                   </span>
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -287,7 +297,8 @@
                   unreadMessage.reply > 0 ||
                   unreadMessage.like > 0 ||
                   unreadMessage.sys > 0 ||
-                  unreadMessage.mine > 0
+                  unreadMessage.mine > 0 ||
+                  unreadMessage.chat > 0
               "
               width="10"
               height="10"
@@ -352,6 +363,17 @@
                 </mu-list-item-title>
               </mu-list-item-content>
             </mu-list-item>
+            <mu-divider></mu-divider>
+            <mu-list-item button value="/chat">
+              <mu-list-item-content>
+                <mu-list-item-title>
+                  {{ $t('m.NavBar_Chat') }}
+                  <span class="drop-msg-count" v-if="unreadMessage.chat > 0">
+                    <MsgSvg :total="unreadMessage.chat"></MsgSvg>
+                  </span>
+                </mu-list-item-title>
+              </mu-list-item-content>
+            </mu-list-item>
           </mu-list>
         </mu-menu>
 
@@ -384,6 +406,14 @@
               <mu-list-item-content>
                 <mu-list-item-title>{{
                   $t('m.NavBar_Submissions')
+                }}</mu-list-item-title>
+              </mu-list-item-content>
+            </mu-list-item>
+            <mu-divider></mu-divider>
+            <mu-list-item button value="/pk-history">
+              <mu-list-item-content>
+                <mu-list-item-title>{{
+                  $t('m.NavBar_PK')
                 }}</mu-list-item-title>
               </mu-list-item-content>
             </mu-list-item>
@@ -651,9 +681,17 @@ export default {
         this.getUnreadMsgCount();
       }, 120 * 1000);
     }
+    // 兜底：5秒后如果页面还没发 contentReady 信号，就启动PK轮询
+    this.fallbackTimer = setTimeout(() => {
+      if (!this.$store.state.user.contentReady) {
+        this.$store.commit('setContentReady', true);
+      }
+    }, 5000);
   },
   beforeDestroy() {
     clearInterval(this.msgTimer);
+    clearInterval(this.pkTimer);
+    clearTimeout(this.fallbackTimer);
   },
   data() {
     return {
@@ -667,6 +705,10 @@ export default {
       imgUrl: require('@/assets/logo.png'),
       avatarStyle:
         'display: inline-flex;width: 30px;height: 30px;border-radius: 50%;align-items: center;justify-content: center;text-align: center;user-select: none;',
+      msgTimer: null,
+      pkTimer: null,
+      fallbackTimer: null,
+      notifiedInviteIds: [],
     };
   },
   methods: {
@@ -708,7 +750,7 @@ export default {
         let data = res.data.data;
         this.$store.dispatch('updateUnreadMessageCount', data);
         let sumMsg =
-          data.comment + data.reply + data.like + data.mine + data.sys;
+          data.comment + data.reply + data.like + data.mine + data.sys + (data.chat || 0);
         if (sumMsg > 0) {
           if (this.webLanguage == 'zh-CN') {
             this.$notify.info({
@@ -737,6 +779,107 @@ export default {
           }
         }
       });
+    },
+    startPkPolling() {
+      if (this.pkTimer) {
+        return; // 已经在轮询中
+      }
+      this.checkPkInvites();
+      this.checkActivePkMatch();
+      this.pkTimer = setInterval(() => {
+        this.checkPkInvites();
+        this.checkActivePkMatch();
+      }, 10 * 1000);
+    },
+    checkPkInvites() {
+      api.getMyPkInvites().then((res) => {
+        let invites = res.data.data;
+        // 清理不在当前邀请列表中的已通知ID
+        if (invites && invites.length > 0) {
+          const currentIds = invites.map(i => i.id);
+          this.notifiedInviteIds = this.notifiedInviteIds.filter(id => currentIds.includes(id));
+          this.$store.commit('setPkInvites', invites);
+          invites.forEach(invite => {
+            // 已经弹过通知的邀请不再重复弹
+            if (this.notifiedInviteIds.includes(invite.id)) {
+              return;
+            }
+            this.notifiedInviteIds.push(invite.id);
+            const from = this.$i18n.t('m.PK_Invite_From') + ' ' + (invite.initiatorNickname || invite.initiatorUsername);
+            const problem = this.$i18n.t('m.PK_Invite_Problem') + ': ' + invite.problemTitle;
+            const html = '<div class="pk-invite-notify-body">'
+              + '<p>' + from + ', ' + problem + '</p>'
+              + '<div class="pk-invite-notify-actions">'
+              + '<button class="pk-notify-btn pk-notify-accept" data-pk-id="' + invite.id + '">' + this.$i18n.t('m.PK_Accept') + '</button>'
+              + '<button class="pk-notify-btn pk-notify-dismiss" data-pk-id="' + invite.id + '">' + this.$i18n.t('m.PK_Dismiss') + '</button>'
+              + '</div></div>';
+            const notification = this.$notify({
+              title: this.$i18n.t('m.PK_Invite_Received'),
+              message: html,
+              position: 'bottom-right',
+              duration: 0,
+              dangerouslyUseHTMLString: true,
+              customClass: 'pk-invite-notify',
+            });
+            // 给按钮绑定事件
+            this.$nextTick(() => {
+              const el = document.querySelectorAll('.pk-invite-notify');
+              const currentEl = el[el.length - 1];
+              if (currentEl) {
+                const acceptBtn = currentEl.querySelector('.pk-notify-accept');
+                const dismissBtn = currentEl.querySelector('.pk-notify-dismiss');
+                if (acceptBtn) {
+                  acceptBtn.addEventListener('click', () => {
+                    this.acceptPkInvite(invite.id);
+                    notification.close();
+                  });
+                }
+                if (dismissBtn) {
+                  dismissBtn.addEventListener('click', () => {
+                    this.dismissPkInvite(invite.id);
+                    notification.close();
+                  });
+                }
+              }
+            });
+          });
+        } else {
+          // 没有邀请时清空已通知记录
+          this.notifiedInviteIds = [];
+          this.$store.commit('setPkInvites', []);
+        }
+      }).catch(() => {});
+    },
+    acceptPkInvite(matchId) {
+      api.respondPkInvite({ matchId: matchId, accept: true }).then(res => {
+        this.$message.success(this.$i18n.t('m.PK_Accept'));
+        // 清除该邀请记录
+        this.notifiedInviteIds = this.notifiedInviteIds.filter(id => id !== matchId);
+        // 刷新store
+        let invites = this.$store.state.user.pkInvites.filter(i => i.id !== matchId);
+        this.$store.commit('setPkInvites', invites);
+        // 接受后跳转到PK对战页面
+        this.$router.push({ name: 'PkPage', params: { matchId: matchId } });
+      }).catch(() => {
+        this.$message.error(this.$i18n.t('m.System_Error'));
+      });
+    },
+    dismissPkInvite(matchId) {
+      // 不再提示：只是关闭通知，不清除邀请（下次轮询时邀请可能仍存在，但已记录的不会再弹）
+      this.notifiedInviteIds = this.notifiedInviteIds.filter(id => id !== matchId);
+    },
+    checkActivePkMatch() {
+      // 如果已经在PK对战页面，不需要再检测跳转
+      if (this.$route.name === 'PkPage') {
+        return;
+      }
+      api.getMyActivePkMatch().then(res => {
+        const match = res.data.data;
+        if (match && match.status === 1) {
+          // 有进行中的PK对战，跳转过去
+          this.$router.push({ name: 'PkPage', params: { matchId: match.id } });
+        }
+      }).catch(() => {});
     },
     changeWebLanguage() {
       this.$store.commit('changeWebLanguage', { language: this.webLanguage == 'zh-CN' ? 'en-US' : 'zh-CN' });
@@ -794,6 +937,8 @@ export default {
         return '/status';
       } else if (this.$route.path.split('/')[1] == 'discussion-detail') {
         return '/discussion';
+      } else if (this.$route.path.split('/')[1] == 'chat') {
+        return '/chat';
       }
       return '/' + this.$route.path.split('/')[1];
     },
@@ -830,12 +975,35 @@ export default {
         this.msgTimer = setInterval(() => {
           this.getUnreadMsgCount();
         }, 120 * 1000);
+        // 如果页面内容已经加载完，立即启动PK轮询
+        if (this.$store.state.user.contentReady) {
+          this.startPkPolling();
+        }
       } else {
         clearInterval(this.msgTimer);
+        clearInterval(this.pkTimer);
+        this.pkTimer = null;
+      }
+    },
+    '$store.state.user.contentReady'(val) {
+      if (val && this.isAuthenticated) {
+        clearTimeout(this.fallbackTimer);
+        this.startPkPolling();
       }
     },
     $route(){
       this.switchMode();
+      // 路由切换时重置 contentReady，停止PK轮询，等新页面加载完再开
+      this.$store.commit('setContentReady', false);
+      clearInterval(this.pkTimer);
+      this.pkTimer = null;
+      // 重新设置兜底定时器
+      clearTimeout(this.fallbackTimer);
+      this.fallbackTimer = setTimeout(() => {
+        if (!this.$store.state.user.contentReady) {
+          this.$store.commit('setContentReady', true);
+        }
+      }, 5000);
     }
   },
 };

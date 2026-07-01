@@ -56,6 +56,9 @@ public class UserHomeVO {
     @ApiModelProperty(value = "cf得分")
     private Integer rating;
 
+    @ApiModelProperty(value = "PK对战积分")
+    private Integer pkScore;
+
     @ApiModelProperty(value = "OI得分列表")
     private List<Integer> scoreList;
 

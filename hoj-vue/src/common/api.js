@@ -1324,7 +1324,57 @@ const ojApi = {
     return ajax("/api/msg/clean", 'delete', {
       params
     });
-  }
+  },
+
+  // 私聊模块
+  getChatContacts() {
+    return ajax('/api/get-chat-contacts', 'get')
+  },
+  getChatMessages(uid, limit, currentPage) {
+    return ajax('/api/get-chat-messages', 'get', {
+      params: { uid, limit, currentPage }
+    })
+  },
+  sendChatMessage(data) {
+    return ajax('/api/send-chat-message', 'post', {
+      data
+    })
+  },
+  getChatUnreadCount() {
+    return ajax('/api/chat-unread-count', 'get')
+  },
+
+  // PK对战模块
+  sendPkInvite(data) {
+    return ajax('/api/pk/invite', 'post', { data })
+  },
+  respondPkInvite(data) {
+    return ajax('/api/pk/respond', 'post', { data })
+  },
+  cancelPkInvite(data) {
+    return ajax('/api/pk/cancel', 'post', { data })
+  },
+  surrenderPk(data) {
+    return ajax('/api/pk/surrender', 'post', { data })
+  },
+  getPkMatchStatus(matchId) {
+    return ajax('/api/pk/status', 'get', { params: { matchId } })
+  },
+  getMyActivePkMatch() {
+    return ajax('/api/pk/my-active', 'get')
+  },
+  getMyPkInvites() {
+    return ajax('/api/pk/my-invites', 'get')
+  },
+  getPkScore(uid) {
+    return ajax('/api/pk/score', 'get', { params: { uid } })
+  },
+  getPkHistory(limit, currentPage) {
+    return ajax('/api/pk/history', 'get', { params: { limit, currentPage } })
+  },
+  searchPkUsers(keyword, limit) {
+    return ajax('/api/pk/search-users', 'get', { params: { keyword, limit } })
+  },
 
 }
 

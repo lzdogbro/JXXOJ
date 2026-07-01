@@ -31,4 +31,6 @@ public class SubmitJudgeDTO {
 
     private Boolean isRemote;
 
+    private Long pkId;
+
 }

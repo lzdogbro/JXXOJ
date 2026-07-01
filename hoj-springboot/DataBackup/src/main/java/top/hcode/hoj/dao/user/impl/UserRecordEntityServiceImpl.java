@@ -2,6 +2,7 @@ package top.hcode.hoj.dao.user.impl;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import top.hcode.hoj.mapper.JudgeMapper;
 import top.hcode.hoj.pojo.entity.judge.Judge;
@@ -80,5 +81,14 @@ public class UserRecordEntityServiceImpl extends ServiceImpl<UserRecordMapper, U
         } else {
             return userRecordMapper.getGroupRankList(page, gid, uidList, rankType);
         }
+    }
+
+    @Override
+    public void updatePkScore(String uid, int delta) {
+        UpdateWrapper<UserRecord> updateWrapper = new UpdateWrapper<>();
+        updateWrapper
+                .eq("uid", uid)
+                .setSql("pk_score = GREATEST(0, pk_score + " + delta + ")");
+        this.update(null, updateWrapper);
     }
 }

@@ -111,7 +111,11 @@ module.exports={
         return args
     })
     config.plugin('webpack-bundle-analyzer') // 查看打包文件体积大小
-      .use(require('webpack-bundle-analyzer').BundleAnalyzerPlugin)
+      .use(require('webpack-bundle-analyzer').BundleAnalyzerPlugin, [{
+        analyzerMode: 'static',  // 生成静态报告文件，避免启动服务器阻塞构建退出
+        openAnalyzer: false,
+        reportFilename: 'bundle-report.html'
+      }])
     // ============注入cdn end============
 
   },

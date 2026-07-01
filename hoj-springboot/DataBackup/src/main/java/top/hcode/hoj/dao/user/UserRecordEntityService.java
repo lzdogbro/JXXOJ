@@ -33,4 +33,6 @@ public interface UserRecordEntityService extends IService<UserRecord> {
 
     IPage<OIRankVO> getGroupRankList(Page<OIRankVO> page, Long gid, List<String> uidList, String rankType, Boolean useCache);
 
+    void updatePkScore(String uid, int delta);
+
 }

@@ -728,6 +728,31 @@
                     </div>
                   </template>
                   <el-button
+                    type="warning"
+                    size="small"
+                    @click.native="openPkDialog"
+                    :disabled="!isAuthenticated || submitDisabled"
+                    class="fl-right"
+                    style="margin-right: 10px; margin-left: 15px;"
+                  >
+                    <svg
+                      class="icon"
+                      viewBox="0 0 24 24"
+                      version="1.1"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      style="vertical-align: middle; margin-right: 3px;"
+                    >
+                      <rect x="11" y="2" width="2" height="13" fill="currentColor"/>
+                      <polygon points="12,2 9,5 15,5" fill="currentColor"/>
+                      <rect x="5" y="10" width="14" height="2" rx="0.5" fill="currentColor"/>
+                      <rect x="11" y="14" width="2" height="7" fill="currentColor"/>
+                      <rect x="9" y="20" width="6" height="2" rx="1" fill="currentColor"/>
+                    </svg>
+                    {{ $t('m.PK_Invite') }}
+                  </el-button>
+                  <el-button
                     type="primary"
                     icon="el-icon-edit-outline"
                     size="small"
@@ -802,6 +827,48 @@
         >{{
           $t('m.Close')
         }}</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- PK对战邀请弹窗 -->
+    <el-dialog
+      :visible.sync="pkDialogVisible"
+      :title="$t('m.PK_Invite_Title')"
+      width="450px"
+    >
+      <div class="pk-invite-dialog">
+        <div class="pk-invite-problem">
+          <span class="pk-label">{{ $t('m.Problem') }}:</span>
+          <span>{{ problemData.problem ? problemData.problem.title : '' }}</span>
+        </div>
+        <div class="pk-invite-search">
+          <span class="pk-label">{{ $t('m.PK_Search_User') }}:</span>
+          <el-autocomplete
+            v-model="pkSearchKeyword"
+            :fetch-suggestions="pkSearchUsers"
+            :placeholder="$t('m.PK_Search_Placeholder')"
+            @select="pkSelectUser"
+            style="width: 100%; margin-top: 8px;"
+          >
+            <template slot-scope="{ item }">
+              <div class="pk-user-option">
+                <span>{{ item.username }}</span>
+                <span v-if="item.nickname" class="pk-user-nickname">({{ item.nickname }})</span>
+              </div>
+            </template>
+          </el-autocomplete>
+        </div>
+        <div v-if="pkSelectedUser" class="pk-selected-user">
+          <span class="pk-user-name">{{ pkSelectedUser.username }}</span>
+          <span v-if="pkSelectedUser.nickname" class="pk-user-nickname">({{ pkSelectedUser.nickname }})</span>
+          <span class="pk-user-score">PK积分: {{ pkSelectedUser.pkScore || 0 }}</span>
+        </div>
+      </div>
+      <div slot="footer">
+        <el-button @click="pkDialogVisible = false" size="small">{{ $t('m.Cancel') }}</el-button>
+        <el-button type="warning" @click="sendPkInvite" size="small" :disabled="!pkSelectedUser" :loading="pkSending">
+          {{ $t('m.PK_Invite_Send') }}
+        </el-button>
       </div>
     </el-dialog>
 
@@ -929,9 +996,15 @@ export default {
       openTestCaseDrawer: false,
       openFocusMode: false,
       showProblemHorizontalMenu: false,
+      // PK对战相关
+      pkDialogVisible: false,
+      pkSearchKeyword: '',
+      pkSelectedUser: null,
+      pkSending: false,
     };
   },
   created() {
+    this.problemID = this.$route.params.problemID || '';
     this.initProblemCodeAndSetting();
     this.JUDGE_STATUS_RESERVE = Object.assign({}, JUDGE_STATUS_RESERVE);
     this.JUDGE_STATUS = Object.assign({}, JUDGE_STATUS);
@@ -1080,6 +1153,9 @@ export default {
       var box = document.getElementById(
         "problem-box" + "-" + this.$route.name
       );
+      if (!resize || !left || !right || !box) {
+        return;
+      }
       const _this = this;
       // 鼠标按下事件
       resize.onmousedown = function (e) {
@@ -1138,6 +1214,9 @@ export default {
       var box = document.getElementById(
         "problem-box" + "-" + this.$route.name
       );
+      if (!resize || !left || !right || !box) {
+        return;
+      }
       resize.style.left = box.clientWidth - 10 + "px";
       left.style.width = box.clientWidth - 10 + "px";
       right.style.width = "0px";
@@ -1157,6 +1236,9 @@ export default {
       var box = document.getElementById(
         "problem-box" + "-" + this.$route.name
       );
+      if (!resize || !left || !right || !box) {
+        return;
+      }
 
       let leftWidth = 0;
       if (minLeft) {
@@ -1295,6 +1377,11 @@ export default {
 
           this.loading = false;
 
+          // 页面内容加载完成，通知NavBar可以开始PK邀请轮询
+          this.$nextTick(() => {
+            this.$store.commit('setContentReady', true);
+          });
+
           if (this.isAuthenticated) {
             let pidList = [result.problem.id];
             let isContestProblemList = this.contestID ? true : false;
@@ -1345,6 +1432,7 @@ export default {
         (err) => {
           this.submitDisabled = true;
           this.loading = false;
+          this.$store.commit('setContentReady', true);
         }
       );
       
@@ -1753,7 +1841,61 @@ export default {
         fontSize: this.fontSize,
         tabSize: this.tabSize,
       });
-    }
+    },
+
+    // PK对战相关方法
+    openPkDialog() {
+      if (!this.isAuthenticated) {
+        this.$store.dispatch('changeModalStatus', { visible: true });
+        return;
+      }
+      if (!this.problemID) {
+        return;
+      }
+      this.pkSearchKeyword = '';
+      this.pkSelectedUser = null;
+      this.pkDialogVisible = true;
+    },
+    pkSearchUsers(queryString, callback) {
+      // 如果callback不是函数（Vue render期间可能会误调用），直接忽略
+      if (typeof callback !== 'function') {
+        return;
+      }
+      if (typeof queryString !== 'string' || queryString.trim() === '') {
+        callback([]);
+        return;
+      }
+      api.searchPkUsers(queryString.trim(), 10).then(res => {
+        let users = res.data.data || [];
+        users.forEach(u => {
+          u.value = u.username + (u.nickname ? ' (' + u.nickname + ')' : '');
+        });
+        callback(users);
+      }).catch(() => {
+        callback([]);
+      });
+    },
+    pkSelectUser(item) {
+      this.pkSelectedUser = item;
+    },
+    sendPkInvite() {
+      if (!this.pkSelectedUser || !this.pkSelectedUser.uid) return;
+      if (!this.problemID) return;
+      this.pkSending = true;
+      api.sendPkInvite({
+        problemId: this.problemID,
+        opponentUid: this.pkSelectedUser.uid
+      }).then(res => {
+        this.pkSending = false;
+        this.pkDialogVisible = false;
+        this.$message.success(this.$t('m.PK_Invite_Sent'));
+      }).catch((err) => {
+        this.pkSending = false;
+        const msg = (err && err.response && err.response.data && err.response.data.msg)
+          || (err && err.data && err.data.msg);
+        this.$message.error(msg || this.$i18n.t('m.System_Error'));
+      });
+    },
   },
   computed: {
     ...mapGetters([

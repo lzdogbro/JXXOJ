@@ -43,6 +43,9 @@ import GroupDiscussionList from '@/views/oj/group/children/GroupDiscussionList.v
 import GroupMemberList from '@/views/oj/group/children/GroupMemberList.vue'
 import GroupSetting from '@/views/oj/group/children/GroupSetting.vue'
 import GroupRank from '@/views/oj/group/children/GroupRank.vue'
+import Chat from '@/views/oj/chat/Chat.vue'
+import PkPage from '@/views/oj/pk/PkPage.vue'
+import PkHistory from '@/views/oj/pk/PkHistory.vue'
 import NotFound from "@/views/404.vue"
 
 const ojRoutes = [
@@ -407,6 +410,24 @@ const ojRoutes = [
         meta: { title: 'Group Rank' }
       },
     ]
+  },
+  {
+    path: '/chat',
+    name: 'Chat',
+    component: Chat,
+    meta: { requireAuth: true, title: 'Chat' }
+  },
+  {
+    path: '/pk/:matchId',
+    name: 'PkPage',
+    component: PkPage,
+    meta: { requireAuth: true, title: 'PK Battle' }
+  },
+  {
+    path: '/pk-history',
+    name: 'PkHistory',
+    component: PkHistory,
+    meta: { requireAuth: true, title: 'PK History' }
   },
   {
     path: '/introduction',

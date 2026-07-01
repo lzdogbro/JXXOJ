@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.hcode.hoj.mapper.PkMatchMapper">
+
+    <resultMap id="map_PkMatch" type="top.hcode.hoj.pojo.vo.PkMatchVO">
+        <id column="id" property="id"></id>
+        <result column="problem_id" property="problemId"></result>
+        <result column="display_problem_id" property="problemDisplayId"></result>
+        <result column="problem_title" property="problemTitle"></result>
+        <result column="initiator_uid" property="initiatorUid"></result>
+        <result column="initiator_username" property="initiatorUsername"></result>
+        <result column="initiator_nickname" property="initiatorNickname"></result>
+        <result column="initiator_avatar" property="initiatorAvatar"></result>
+        <result column="initiator_pk_score" property="initiatorPkScore"></result>
+        <result column="opponent_uid" property="opponentUid"></result>
+        <result column="opponent_username" property="opponentUsername"></result>
+        <result column="opponent_nickname" property="opponentNickname"></result>
+        <result column="opponent_avatar" property="opponentAvatar"></result>
+        <result column="opponent_pk_score" property="opponentPkScore"></result>
+        <result column="status" property="status"></result>
+        <result column="winner_uid" property="winnerUid"></result>
+        <result column="winner_username" property="winnerUsername"></result>
+        <result column="initiator_submit_id" property="initiatorSubmitId"></result>
+        <result column="opponent_submit_id" property="opponentSubmitId"></result>
+        <result column="start_time" property="startTime"></result>
+        <result column="end_time" property="endTime"></result>
+        <result column="surrender_uid" property="surrenderUid"></result>
+        <result column="gmt_create" property="gmtCreate"></result>
+    </resultMap>
+
+    <select id="selectPkMatchById" resultMap="map_PkMatch">
+        SELECT
+            pm.id,
+            pm.problem_id,
+            p.problem_id AS display_problem_id,
+            p.title AS problem_title,
+            pm.initiator_uid,
+            iu.username AS initiator_username,
+            iu.nickname AS initiator_nickname,
+            iu.avatar AS initiator_avatar,
+            COALESCE(iur.pk_score, 0) AS initiator_pk_score,
+            pm.opponent_uid,
+            ou.username AS opponent_username,
+            ou.nickname AS opponent_nickname,
+            ou.avatar AS opponent_avatar,
+            COALESCE(our.pk_score, 0) AS opponent_pk_score,
+            pm.status,
+            pm.winner_uid,
+            wu.username AS winner_username,
+            pm.initiator_submit_id,
+            pm.opponent_submit_id,
+            pm.start_time,
+            pm.end_time,
+            pm.surrender_uid,
+            pm.gmt_create
+        FROM pk_match pm
+        INNER JOIN user_info iu ON iu.uuid = pm.initiator_uid
+        INNER JOIN user_info ou ON ou.uuid = pm.opponent_uid
+        INNER JOIN problem p ON p.id = pm.problem_id
+        LEFT JOIN user_record iur ON iur.uid = pm.initiator_uid
+        LEFT JOIN user_record our ON our.uid = pm.opponent_uid
+        LEFT JOIN user_info wu ON wu.uuid = pm.winner_uid
+        WHERE pm.id = #{id}
+    </select>
+
+    <select id="selectActivePkMatchByUserId" resultMap="map_PkMatch">
+        SELECT
+            pm.id,
+            pm.problem_id,
+            p.problem_id AS display_problem_id,
+            p.title AS problem_title,
+            pm.initiator_uid,
+            iu.username AS initiator_username,
+            iu.nickname AS initiator_nickname,
+            iu.avatar AS initiator_avatar,
+            COALESCE(iur.pk_score, 0) AS initiator_pk_score,
+            pm.opponent_uid,
+            ou.username AS opponent_username,
+            ou.nickname AS opponent_nickname,
+            ou.avatar AS opponent_avatar,
+            COALESCE(our.pk_score, 0) AS opponent_pk_score,
+            pm.status,
+            pm.winner_uid,
+            wu.username AS winner_username,
+            pm.initiator_submit_id,
+            pm.opponent_submit_id,
+            pm.start_time,
+            pm.end_time,
+            pm.surrender_uid,
+            pm.gmt_create
+        FROM pk_match pm
+        INNER JOIN user_info iu ON iu.uuid = pm.initiator_uid
+        INNER JOIN user_info ou ON ou.uuid = pm.opponent_uid
+        INNER JOIN problem p ON p.id = pm.problem_id
+        LEFT JOIN user_record iur ON iur.uid = pm.initiator_uid
+        LEFT JOIN user_record our ON our.uid = pm.opponent_uid
+        LEFT JOIN user_info wu ON wu.uuid = pm.winner_uid
+        WHERE (pm.initiator_uid = #{uid} OR pm.opponent_uid = #{uid})
+          AND pm.status IN (0, 1)
+        LIMIT 1
+    </select>
+
+    <select id="selectPendingPkMatchByUserId" resultMap="map_PkMatch">
+        SELECT
+            pm.id,
+            pm.problem_id,
+            p.problem_id AS display_problem_id,
+            p.title AS problem_title,
+            pm.initiator_uid,
+            iu.username AS initiator_username,
+            iu.nickname AS initiator_nickname,
+            iu.avatar AS initiator_avatar,
+            COALESCE(iur.pk_score, 0) AS initiator_pk_score,
+            pm.opponent_uid,
+            ou.username AS opponent_username,
+            ou.nickname AS opponent_nickname,
+            ou.avatar AS opponent_avatar,
+            COALESCE(our.pk_score, 0) AS opponent_pk_score,
+            pm.status,
+            pm.winner_uid,
+            wu.username AS winner_username,
+            pm.initiator_submit_id,
+            pm.opponent_submit_id,
+            pm.start_time,
+            pm.end_time,
+            pm.surrender_uid,
+            pm.gmt_create
+        FROM pk_match pm
+        INNER JOIN user_info iu ON iu.uuid = pm.initiator_uid
+        INNER JOIN user_info ou ON ou.uuid = pm.opponent_uid
+        INNER JOIN problem p ON p.id = pm.problem_id
+        LEFT JOIN user_record iur ON iur.uid = pm.initiator_uid
+        LEFT JOIN user_record our ON our.uid = pm.opponent_uid
+        LEFT JOIN user_info wu ON wu.uuid = pm.winner_uid
+        WHERE pm.opponent_uid = #{uid}
+          AND pm.status = 0
+        ORDER BY pm.gmt_create DESC
+    </select>
+
+    <select id="selectPkHistory" resultMap="map_PkMatch">
+        SELECT
+            pm.id,
+            pm.problem_id,
+            p.problem_id AS display_problem_id,
+            p.title AS problem_title,
+            pm.initiator_uid,
+            iu.username AS initiator_username,
+            iu.nickname AS initiator_nickname,
+            iu.avatar AS initiator_avatar,
+            COALESCE(iur.pk_score, 0) AS initiator_pk_score,
+            pm.opponent_uid,
+            ou.username AS opponent_username,
+            ou.nickname AS opponent_nickname,
+            ou.avatar AS opponent_avatar,
+            COALESCE(our.pk_score, 0) AS opponent_pk_score,
+            pm.status,
+            pm.winner_uid,
+            wu.username AS winner_username,
+            pm.initiator_submit_id,
+            pm.opponent_submit_id,
+            pm.start_time,
+            pm.end_time,
+            pm.surrender_uid,
+            pm.gmt_create
+        FROM pk_match pm
+        INNER JOIN user_info iu ON iu.uuid = pm.initiator_uid
+        INNER JOIN user_info ou ON ou.uuid = pm.opponent_uid
+        INNER JOIN problem p ON p.id = pm.problem_id
+        LEFT JOIN user_record iur ON iur.uid = pm.initiator_uid
+        LEFT JOIN user_record our ON our.uid = pm.opponent_uid
+        LEFT JOIN user_info wu ON wu.uuid = pm.winner_uid
+        WHERE (pm.initiator_uid = #{uid} OR pm.opponent_uid = #{uid})
+          AND pm.status IN (2, 3, 4, 5, 6)
+        ORDER BY pm.gmt_create DESC
+    </select>
+
+</mapper>
