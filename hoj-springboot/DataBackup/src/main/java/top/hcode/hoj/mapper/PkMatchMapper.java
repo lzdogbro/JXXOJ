@@ -21,5 +21,7 @@ public interface PkMatchMapper extends BaseMapper<PkMatch> {
 
     List<PkMatchVO> selectPendingPkMatchByUserId(@Param("uid") String uid);
 
+    List<PkMatchVO> selectMyAllPendingInvites(@Param("uid") String uid);
+
     IPage<PkMatchVO> selectPkHistory(Page<PkMatchVO> page, @Param("uid") String uid);
 }

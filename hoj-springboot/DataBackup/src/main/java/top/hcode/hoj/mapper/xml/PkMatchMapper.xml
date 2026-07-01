@@ -96,7 +96,7 @@
         LEFT JOIN user_record our ON our.uid = pm.opponent_uid
         LEFT JOIN user_info wu ON wu.uuid = pm.winner_uid
         WHERE (pm.initiator_uid = #{uid} OR pm.opponent_uid = #{uid})
-          AND pm.status IN (0, 1)
+          AND pm.status = 1
         LIMIT 1
     </select>
 
@@ -134,6 +134,45 @@
         LEFT JOIN user_info wu ON wu.uuid = pm.winner_uid
         WHERE pm.opponent_uid = #{uid}
           AND pm.status = 0
+          AND pm.gmt_create > DATE_SUB(NOW(), INTERVAL 6 HOUR)
+        ORDER BY pm.gmt_create DESC
+    </select>
+
+    <select id="selectMyAllPendingInvites" resultMap="map_PkMatch">
+        SELECT
+            pm.id,
+            pm.problem_id,
+            p.problem_id AS display_problem_id,
+            p.title AS problem_title,
+            pm.initiator_uid,
+            iu.username AS initiator_username,
+            iu.nickname AS initiator_nickname,
+            iu.avatar AS initiator_avatar,
+            COALESCE(iur.pk_score, 0) AS initiator_pk_score,
+            pm.opponent_uid,
+            ou.username AS opponent_username,
+            ou.nickname AS opponent_nickname,
+            ou.avatar AS opponent_avatar,
+            COALESCE(our.pk_score, 0) AS opponent_pk_score,
+            pm.status,
+            pm.winner_uid,
+            wu.username AS winner_username,
+            pm.initiator_submit_id,
+            pm.opponent_submit_id,
+            pm.start_time,
+            pm.end_time,
+            pm.surrender_uid,
+            pm.gmt_create
+        FROM pk_match pm
+        INNER JOIN user_info iu ON iu.uuid = pm.initiator_uid
+        INNER JOIN user_info ou ON ou.uuid = pm.opponent_uid
+        INNER JOIN problem p ON p.id = pm.problem_id
+        LEFT JOIN user_record iur ON iur.uid = pm.initiator_uid
+        LEFT JOIN user_record our ON our.uid = pm.opponent_uid
+        LEFT JOIN user_info wu ON wu.uuid = pm.winner_uid
+        WHERE (pm.initiator_uid = #{uid} OR pm.opponent_uid = #{uid})
+          AND pm.status = 0
+          AND pm.gmt_create > DATE_SUB(NOW(), INTERVAL 6 HOUR)
         ORDER BY pm.gmt_create DESC
     </select>
 

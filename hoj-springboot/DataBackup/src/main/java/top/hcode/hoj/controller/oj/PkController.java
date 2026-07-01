@@ -70,6 +70,12 @@ public class PkController {
         return pkService.getMyPendingInvites();
     }
 
+    @GetMapping("/pk/my-all-invites")
+    @RequiresAuthentication
+    public CommonResult<List<PkMatchVO>> getMyAllPendingInvites() {
+        return pkService.getMyAllPendingInvites();
+    }
+
     @GetMapping("/pk/score")
     @RequiresAuthentication
     public CommonResult<PkScoreVO> getPkScore(@RequestParam(required = false) String uid) {

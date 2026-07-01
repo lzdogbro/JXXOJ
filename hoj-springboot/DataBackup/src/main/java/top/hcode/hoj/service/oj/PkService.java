@@ -24,6 +24,8 @@ public interface PkService {
 
     CommonResult<List<PkMatchVO>> getMyPendingInvites();
 
+    CommonResult<List<PkMatchVO>> getMyAllPendingInvites();
+
     CommonResult<PkScoreVO> getPkScore(String uid);
 
     CommonResult<List<Map<String, Object>>> searchUsers(String keyword, Integer limit);

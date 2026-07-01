@@ -80,6 +80,11 @@ public class PkServiceImpl implements PkService {
     }
 
     @Override
+    public CommonResult<List<PkMatchVO>> getMyAllPendingInvites() {
+        return CommonResult.successResponse(pkManager.getMyAllPendingInvites());
+    }
+
+    @Override
     public CommonResult<PkScoreVO> getPkScore(String uid) {
         return CommonResult.successResponse(pkManager.getPkScore(uid));
     }

@@ -1366,6 +1366,9 @@ const ojApi = {
   getMyPkInvites() {
     return ajax('/api/pk/my-invites', 'get')
   },
+  getMyAllPkInvites() {
+    return ajax('/api/pk/my-all-invites', 'get')
+  },
   getPkScore(uid) {
     return ajax('/api/pk/score', 'get', { params: { uid } })
   },

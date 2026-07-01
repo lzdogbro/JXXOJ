@@ -478,7 +478,7 @@ export default {
     },
 
     surrender() {
-      this.$confirm(this.$i18n.t('m.PK_Surrender') + '?', this.$i18n.t('m.Confirm'), {
+      this.$confirm(this.$i18n.t('m.PK_Surrender_Tips'), this.$i18n.t('m.PK_Surrender'), {
         confirmButtonText: this.$i18n.t('m.Confirm'),
         cancelButtonText: this.$i18n.t('m.Cancel'),
         type: 'warning',

@@ -21,91 +21,185 @@
       </h2>
     </div>
 
+    <!-- 待处理的PK邀请 -->
+    <div v-if="!loading && pendingInvites.length > 0" class="pending-section">
+      <h3 class="section-title">
+        <i class="el-icon-bell"></i>
+        {{ $t('m.PK_Pending_Invites') }}
+        <span class="pending-count">({{ pendingInvites.length }})</span>
+      </h3>
+      <div
+        v-for="invite in pendingInvites"
+        :key="'p-' + invite.id"
+        class="pending-card"
+      >
+        <div class="pending-main">
+          <div class="pending-users">
+            <avatar
+              v-if="isSentInvite(invite)"
+              :username="invite.opponentUsername"
+              :size="36"
+              :src="invite.opponentAvatar"
+              :inline="true"
+              color="#FFF"
+            ></avatar>
+            <avatar
+              v-else
+              :username="invite.initiatorUsername"
+              :size="36"
+              :src="invite.initiatorAvatar"
+              :inline="true"
+              color="#FFF"
+            ></avatar>
+          </div>
+          <div class="pending-info">
+            <div class="pending-text">
+              <template v-if="isSentInvite(invite)">
+                {{ $t('m.PK_Invite_Sent_Text') }}
+                <strong>{{ invite.opponentNickname || invite.opponentUsername }}</strong>
+                {{ $t('m.PK_Invite_Received_Text') }}
+              </template>
+              <template v-else>
+                <strong>{{ invite.initiatorNickname || invite.initiatorUsername }}</strong>
+                {{ $t('m.PK_Invite_Received_Text') }}
+              </template>
+            </div>
+            <div class="pending-problem" @click="goToProblem(invite.problemDisplayId)">
+              <i class="el-icon-document"></i>
+              {{ invite.problemDisplayId }} {{ invite.problemTitle }}
+            </div>
+            <div class="pending-time">
+              <i class="el-icon-time"></i>
+              {{ invite.gmtCreate | localtime }}
+            </div>
+          </div>
+        </div>
+        <div class="pending-actions">
+          <template v-if="isSentInvite(invite)">
+            <el-button
+              size="small"
+              type="info"
+              plain
+              :loading="cancelLoading === invite.id"
+              @click="cancelInvite(invite)"
+            >
+              {{ $t('m.PK_Invite_Cancel_Btn') }}
+            </el-button>
+          </template>
+          <template v-else>
+            <el-button
+              size="small"
+              type="success"
+              :loading="acceptLoading === invite.id"
+              @click="acceptInvite(invite)"
+            >
+              {{ $t('m.PK_Accept') }}
+            </el-button>
+            <el-button
+              size="small"
+              type="danger"
+              plain
+              :loading="rejectLoading === invite.id"
+              @click="rejectInvite(invite)"
+            >
+              {{ $t('m.PK_Reject') }}
+            </el-button>
+          </template>
+        </div>
+      </div>
+    </div>
+
     <div v-if="loading" class="loading-wrapper">
       <i class="el-icon-loading"></i> {{ $t('m.Loading') }}
     </div>
 
-    <div v-else-if="records.length === 0" class="empty-wrapper">
+    <div v-else-if="pendingInvites.length === 0 && records.length === 0" class="empty-wrapper">
       <i class="el-icon-s-data"></i>
       <p>{{ $t('m.PK_History_Empty') }}</p>
     </div>
 
-    <div v-else class="pk-history-list">
-      <div
-        v-for="record in records"
-        :key="record.id"
-        class="pk-record-card"
-        :class="getResultClass(record)"
-      >
-        <div class="record-main">
-          <div class="record-players">
-            <div class="player" :class="{ 'is-winner': isWinner(record, 'initiator') }">
-              <avatar
-                :username="record.initiatorUsername"
-                :size="40"
-                :src="record.initiatorAvatar"
-                :inline="true"
-                color="#FFF"
-              ></avatar>
-              <div class="player-info">
-                <span class="player-name">{{ record.initiatorNickname || record.initiatorUsername }}</span>
-                <span class="player-score">PK {{ record.initiatorPkScore || 0 }}</span>
-              </div>
-              <i v-if="isWinner(record, 'initiator')" class="el-icon-medal winner-badge"></i>
-            </div>
-
-            <div class="vs-divider">
-              <span class="vs-text">VS</span>
-            </div>
-
-            <div class="player" :class="{ 'is-winner': isWinner(record, 'opponent') }">
-              <avatar
-                :username="record.opponentUsername"
-                :size="40"
-                :src="record.opponentAvatar"
-                :inline="true"
-                color="#FFF"
-              ></avatar>
-              <div class="player-info">
-                <span class="player-name">{{ record.opponentNickname || record.opponentUsername }}</span>
-                <span class="player-score">PK {{ record.opponentPkScore || 0 }}</span>
-              </div>
-              <i v-if="isWinner(record, 'opponent')" class="el-icon-medal winner-badge"></i>
-            </div>
-          </div>
-
-          <div class="record-meta">
-            <span class="record-problem" @click="goToProblem(record.problemDisplayId)">
-              <i class="el-icon-document"></i>
-              {{ record.problemDisplayId }} {{ record.problemTitle }}
-            </span>
-            <span class="record-result" :style="{ color: getResultColor(record) }">
-              {{ getResultText(record) }}
-            </span>
-            <span class="record-time">
-              <i class="el-icon-time"></i>
-              {{ record.startTime | localtime }}
-            </span>
-            <span v-if="record.initiatorScoreChange !== null && record.initiatorScoreChange !== undefined" class="record-score-change" :class="getScoreChangeClass(record)">
-              {{ getScoreChangeText(record) }}
-            </span>
-          </div>
-        </div>
-        <div class="record-status-badge" :style="{ background: getStatusBg(record.status) }">
-          {{ getStatusText(record.status) }}
-        </div>
-      </div>
-
-      <div class="pagination-wrapper" v-if="total > 0">
-        <el-pagination
-          background
-          layout="prev, pager, next"
-          :total="total"
-          :page-size="limit"
-          :current-page.sync="currentPage"
-          @current-change="loadRecords"
+    <div v-if="!loading && records.length > 0" class="pk-history-section">
+      <h3 v-if="pendingInvites.length > 0" class="section-title">
+        <i class="el-icon-s-data"></i>
+        {{ $t('m.PK_History_Title') }}
+      </h3>
+      <div class="pk-history-list">
+        <div
+          v-for="record in records"
+          :key="record.id"
+          class="pk-record-card"
+          :class="getResultClass(record)"
         >
-        </el-pagination>
+          <div class="record-main">
+            <div class="record-players">
+              <div class="player" :class="{ 'is-winner': isWinner(record, 'initiator') }">
+                <avatar
+                  :username="record.initiatorUsername"
+                  :size="40"
+                  :src="record.initiatorAvatar"
+                  :inline="true"
+                  color="#FFF"
+                ></avatar>
+                <div class="player-info">
+                  <span class="player-name">{{ record.initiatorNickname || record.initiatorUsername }}</span>
+                  <span class="player-score">PK {{ record.initiatorPkScore || 0 }}</span>
+                </div>
+                <i v-if="isWinner(record, 'initiator')" class="el-icon-medal winner-badge"></i>
+              </div>
+
+              <div class="vs-divider">
+                <span class="vs-text">VS</span>
+              </div>
+
+              <div class="player" :class="{ 'is-winner': isWinner(record, 'opponent') }">
+                <avatar
+                  :username="record.opponentUsername"
+                  :size="40"
+                  :src="record.opponentAvatar"
+                  :inline="true"
+                  color="#FFF"
+                ></avatar>
+                <div class="player-info">
+                  <span class="player-name">{{ record.opponentNickname || record.opponentUsername }}</span>
+                  <span class="player-score">PK {{ record.opponentPkScore || 0 }}</span>
+                </div>
+                <i v-if="isWinner(record, 'opponent')" class="el-icon-medal winner-badge"></i>
+              </div>
+            </div>
+
+            <div class="record-meta">
+              <span class="record-problem" @click="goToProblem(record.problemDisplayId)">
+                <i class="el-icon-document"></i>
+                {{ record.problemDisplayId }} {{ record.problemTitle }}
+              </span>
+              <span class="record-result" :style="{ color: getResultColor(record) }">
+                {{ getResultText(record) }}
+              </span>
+              <span class="record-time">
+                <i class="el-icon-time"></i>
+                {{ record.startTime | localtime }}
+              </span>
+              <span v-if="record.initiatorScoreChange !== null && record.initiatorScoreChange !== undefined" class="record-score-change" :class="getScoreChangeClass(record)">
+                {{ getScoreChangeText(record) }}
+              </span>
+            </div>
+          </div>
+          <div class="record-status-badge" :style="{ background: getStatusBg(record.status) }">
+            {{ getStatusText(record.status) }}
+          </div>
+        </div>
+
+        <div class="pagination-wrapper" v-if="total > 0">
+          <el-pagination
+            background
+            layout="prev, pager, next"
+            :total="total"
+            :page-size="limit"
+            :current-page.sync="currentPage"
+            @current-change="loadRecords"
+          >
+          </el-pagination>
+        </div>
       </div>
     </div>
   </div>
@@ -123,16 +217,39 @@ export default {
   data() {
     return {
       records: [],
+      pendingInvites: [],
       loading: false,
       currentPage: 1,
       limit: 10,
       total: 0,
+      acceptLoading: null,
+      rejectLoading: null,
+      cancelLoading: null,
     };
   },
+  computed: {
+    currentUserUid() {
+      return this.$store.getters.userInfo.uid;
+    },
+  },
   mounted() {
-    this.loadRecords();
+    this.loadData();
   },
   methods: {
+    loadData() {
+      this.loading = true;
+      Promise.all([
+        api.getMyAllPkInvites(),
+        api.getPkHistory(this.limit, this.currentPage),
+      ]).then(([invitesRes, historyRes]) => {
+        this.pendingInvites = invitesRes.data.data || [];
+        this.records = historyRes.data.data.records || [];
+        this.total = historyRes.data.data.total || 0;
+        this.loading = false;
+      }).catch(() => {
+        this.loading = false;
+      });
+    },
     loadRecords() {
       this.loading = true;
       api.getPkHistory(this.limit, this.currentPage).then((res) => {
@@ -141,6 +258,43 @@ export default {
         this.loading = false;
       }).catch(() => {
         this.loading = false;
+      });
+    },
+    isSentInvite(invite) {
+      return invite.initiatorUid === this.currentUserUid;
+    },
+    acceptInvite(invite) {
+      this.acceptLoading = invite.id;
+      api.respondPkInvite({ matchId: invite.id, accept: true }).then(() => {
+        this.$message.success(this.$i18n.t('m.PK_Accept'));
+        this.$router.push('/pk/' + invite.id);
+      }).catch(() => {
+        this.$message.error(this.$i18n.t('m.System_Error'));
+      }).finally(() => {
+        this.acceptLoading = null;
+        this.loadData();
+      });
+    },
+    rejectInvite(invite) {
+      this.rejectLoading = invite.id;
+      api.respondPkInvite({ matchId: invite.id, accept: false }).then(() => {
+        this.$message.success(this.$i18n.t('m.PK_Reject'));
+        this.loadData();
+      }).catch(() => {
+        this.$message.error(this.$i18n.t('m.System_Error'));
+      }).finally(() => {
+        this.rejectLoading = null;
+      });
+    },
+    cancelInvite(invite) {
+      this.cancelLoading = invite.id;
+      api.cancelPkInvite({ matchId: invite.id }).then(() => {
+        this.$message.success(this.$i18n.t('m.PK_Invite_Cancel_Btn'));
+        this.loadData();
+      }).catch(() => {
+        this.$message.error(this.$i18n.t('m.System_Error'));
+      }).finally(() => {
+        this.cancelLoading = null;
       });
     },
     isWinner(record, role) {
@@ -228,6 +382,100 @@ export default {
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
+}
+
+/* Pending Invites Section */
+.pending-section {
+  margin-bottom: 28px;
+}
+
+.section-title {
+  font-size: 16px;
+  color: #303133;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ebeef5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-title .el-icon-bell {
+  color: #e6a23c;
+}
+
+.pending-count {
+  font-size: 13px;
+  color: #909399;
+  font-weight: normal;
+}
+
+.pending-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fdf6ec;
+  border: 1px solid #faecd8;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  transition: transform 0.15s;
+}
+
+.pending-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(230, 162, 60, 0.1);
+}
+
+.pending-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pending-users {
+  flex-shrink: 0;
+}
+
+.pending-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pending-text {
+  font-size: 14px;
+  color: #303133;
+  margin-bottom: 4px;
+}
+
+.pending-text strong {
+  color: #e6a23c;
+}
+
+.pending-problem {
+  font-size: 12px;
+  color: #409eff;
+  cursor: pointer;
+  display: inline-block;
+  margin-bottom: 2px;
+}
+
+.pending-problem:hover {
+  text-decoration: underline;
+}
+
+.pending-time {
+  font-size: 11px;
+  color: #909399;
+}
+
+.pending-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: 14px;
 }
 
 .pk-history-header h2 {
@@ -423,6 +671,20 @@ export default {
 @media screen and (max-width: 768px) {
   .pk-history-container {
     padding: 12px;
+  }
+
+  .pending-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pending-main {
+    margin-bottom: 10px;
+  }
+
+  .pending-actions {
+    margin-left: 0;
+    justify-content: flex-end;
   }
 
   .record-players {

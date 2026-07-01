@@ -37,6 +37,11 @@ public class PkMatchEntityServiceImpl extends ServiceImpl<PkMatchMapper, PkMatch
     }
 
     @Override
+    public List<PkMatchVO> getMyAllPendingInvites(String uid) {
+        return pkMatchMapper.selectMyAllPendingInvites(uid);
+    }
+
+    @Override
     public IPage<PkMatchVO> getPkHistory(Page<PkMatchVO> page, String uid) {
         return pkMatchMapper.selectPkHistory(page, uid);
     }

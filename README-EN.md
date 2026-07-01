@@ -56,6 +56,61 @@ Direct one-on-one messaging between users, complementing the existing notificati
 
 > 📌 **Note**: Upgrading to the version with PK and Private Chat requires SQL schema changes (new `pk_match` and `private_chat` tables, plus `pk_score` column in `user_record`). See `sqlAndsetting/hoj.sql` for details.
 
+---
+
+## Changelog
+
+| Date       | Content                                                  | Contributor    |
+| ---------- | -------------------------------------------------------- | -------------- |
+| 2020-10-26 | Development started                                      | Himit_ZH       |
+| 2021-04-10 | First online test                                        | Himit_ZH       |
+| 2021-04-15 | Judge scheduling 2.0 to solve concurrency issues         | Himit_ZH       |
+| 2021-04-16 | Refactored JudgeServer, added deployment docs            | Himit_ZH       |
+| 2021-04-19 | Added rsync for judge data sync, fixed known bugs        | Himit_ZH       |
+| 2021-04-24 | Added problem templates, updated page footer             | Himit_ZH       |
+| 2021-05-02 | Fixed rank list invalidation after contest rejudge       | Himit_ZH       |
+| 2021-05-09 | Added public discussion, problem discussion, contest comments | Himit_ZH  |
+| 2021-05-12 | Added comment/reply deletion, discussion report          | Himit_ZH       |
+| 2021-05-16 | Improved permission control, discussion admin management | Himit_ZH       |
+| 2021-05-22 | Updated docker-compose one-click deploy, fixed bugs      | Himit_ZH       |
+| 2021-05-24 | Changed judge scheduling optimistic lock to pessimistic   | Himit_ZH       |
+| 2021-05-28 | Added import/export problems, last login on user page    | Himit_ZH       |
+| 2021-06-02 | Major update: improved frontend, fixed judge timeout, bug fixes | Himit_ZH |
+| 2021-06-07 | Fixed special judge, added frontend i18n                 | Himit_ZH       |
+| 2021-06-08 | Added admin i18n, route lazy loading                     | Himit_ZH       |
+| 2021-06-12 | Improved contest modes, see online docs for details      | Himit_ZH       |
+| 2021-06-14 | Improved admin permission control, restored CF vjudge    | Himit_ZH       |
+| 2021-06-25 | Enhanced frontend interactions, added POJ vjudge         | Himit_ZH       |
+| 2021-08-14 | Added testlib support for SPJ                            | Himit_ZH       |
+| 2021-09-21 | Added contest printing, account restriction              | Himit_ZH       |
+| 2021-10-05 | Added notification system: comments, replies, likes, system notices | Himit_ZH |
+| 2021-10-06 | Beautified contest rank, added FPS problem import        | Himit_ZH       |
+| 2021-12-09 | Added external rank, star teams, attention teams         | Himit_ZH       |
+| 2022-01-01 | Added public training and training lists                 | Himit_ZH       |
+| 2022-01-04 | Added interactive judge, refactored 3 judge modes        | Himit_ZH       |
+| 2022-01-29 | Refactored Remote Judge, added AtCoder, SPOJ             | Himit_ZH       |
+| 2022-02-19 | Redesigned homepage and problem list page                | Himit_ZH       |
+| 2022-02-25 | Added PyPy2, PyPy3, JavaScript V8, JavaScript Node, PHP  | Himit_ZH       |
+| 2022-03-12 | Refactored all backend APIs, added caching for contest rank | Himit_ZH    |
+| 2022-03-28 | Merged group feature by 冷蕴                              | Himit_ZH, 冷蕴 |
+| 2022-04-01 | Group feature officially launched                        | Himit_ZH, 冷蕴 |
+| 2022-05-29 | Added online debug, submission heatmap on user profile   | Himit_ZH       |
+| 2022-08-06 | Added problem tag category management (two-level tags)   | Himit_ZH       |
+| 2022-08-21 | Added manual judge, cancel judge                         | Himit_ZH       |
+| 2022-08-30 | Added OI subtask, ACM 'stop on error' mode               | Himit_ZH       |
+| 2022-10-04 | Added contest award config, ACM scroll board             | Himit_ZH       |
+| 2022-11-14 | Added focus mode for problem details, optimized homepage | Himit_ZH       |
+| 2023-05-01 | Added file IO support for problems                       | Himit_ZH       |
+| 2023-06-11 | Allowed submission after contest ends                    | Himit_ZH       |
+| 2023-06-27 | Added Ruby, Rust support                                 | Himit_ZH       |
+| 2024-03-13 | Added LibreOJ remote judge                               | Himit_ZH, Nine |
+| 2025-06-25 | Added email sending for real-name verification           |                |
+| 2026-06-03 | **Forked to JXXOJ**: Secondary development of HOJ        | lzdogbro       |
+| 2026-06-10 | **Added Private Chat**: 1-on-1 messaging, contact list, unread badges | lzdogbro |
+| 2026-06-18 | **Added PK Battle**: 1v1 real-time coding duel, 20-min limit, scoring system | lzdogbro |
+
+---
+
 ## Installation
 
 Please run HOJ on the following platforms:
@@ -94,16 +149,6 @@ Wait for the command to finish, then run `docker ps`. When all containers show `
 ## Browser Support
 
 Modern browsers (Chrome, Firefox) and Internet Explorer 10+. Mobile browsers are also supported.
-
-## Support & Contribution
-
-- If you find HOJ helpful, please give the project a star ⭐
-- If you found any bug, please feel free to contact us via [QQ Group: 598587305](https://qm.qq.com/cgi-bin/qm/qr?k=WWGBZ5gfDiBZOcpNvM8xnZTfUq7BT4Rs&jump_from=webapi) or open an issue
-- Thanks to everyone that contributes to this project
-
-## License
-
-[MIT](http://opensource.org/licenses/MIT)
 
 ## Screenshots
 
@@ -223,24 +268,29 @@ Modern browsers (Chrome, Firefox) and Internet Explorer 10+. Mobile browsers are
 
 ![Mobile Comment](https://cdn.jsdelivr.net/gh/HimitZH/HOJ/docs/docs/.vuepress/public/20210509233845230.png)
 
-### 13. PK Battle (NEW 🆕)
+### 13. Private Chat (NEW 🆕)
 
-> PK Battle page: Split-screen with problem description + code editor, real-time countdown at top
+![Private Chat](image.png)
 
-<div align="center">
-  <p><em>PK Battle in progress — Problem on the left, editor on the right, 20-minute countdown</em></p>
-</div>
+### 14. PK Battle (NEW 🆕)
+
+> PK Battle page: Split-screen layout (problem + editor), with player info and countdown at top
+
+![Jump to PK from problem page](image-2.png)
+![PK Battle page](image-3.png)
 
 > PK Match History: View all past battles with opponent info, results, and score changes
 
-<div align="center">
-  <p><em>PK History — Shows both players, problem, result, and score delta</em></p>
-</div>
+![PK History](image-1.png)
 
-### 14. Private Chat (NEW 🆕)
+## Support & Contribution
 
-> Chat interface: Contact list on the left, message panel on the right, with unread badges
+- If you find HOJ helpful, please give the project a star ⭐
+- If you found any bug, please feel free to contact me (DogBro lzzhaoning@163.com) or open an issue
+- Thanks to everyone that contributes to this project
 
-<div align="center">
-  <p><em>Private Chat — Contact list + messaging panel with unread count badges</em></p>
-</div>
+**Acknowledgments**: Thanks to [HimitZH](https://github.com/HimitZH) for the excellent original project, and all contributors for their hard work.
+
+## License
+
+[MIT](http://opensource.org/licenses/MIT)

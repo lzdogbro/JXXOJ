@@ -73,22 +73,31 @@ public class PkManager {
             throw new StatusFailException("题目不存在");
         }
 
-        // 校验当前用户没有活跃PK
+        // 校验当前用户没有进行中的PK对战（pending邀请不阻塞，允许同时向多人发邀请）
         List<PkMatchVO> myActive = pkMatchEntityService.getActivePkMatchByUserId(currentUser.getUid());
         if (myActive != null && !myActive.isEmpty()) {
-            throw new StatusFailException("你已有一场进行中或等待中的PK对战，请先结束");
+            throw new StatusFailException("你已有一场进行中的PK对战，请先结束");
         }
 
-        // 校验对手没有活跃PK
+        // 校验对手没有进行中的PK对战
         List<PkMatchVO> opponentActive = pkMatchEntityService.getActivePkMatchByUserId(opponentUid);
         if (opponentActive != null && !opponentActive.isEmpty()) {
-            throw new StatusFailException("对手已有一场进行中或等待中的PK对战");
+            throw new StatusFailException("对手已有一场进行中的PK对战");
         }
 
         // 校验对手存在
         UserInfo opponent = userInfoEntityService.getById(opponentUid);
         if (opponent == null) {
             throw new StatusFailException("对手用户不存在");
+        }
+
+        // 防重复：检查是否已有同一发起者对同一对手的待接受邀请
+        QueryWrapper<PkMatch> dupQuery = new QueryWrapper<>();
+        dupQuery.eq("initiator_uid", currentUser.getUid())
+                .eq("opponent_uid", opponentUid)
+                .eq("status", 0);
+        if (pkMatchEntityService.count(dupQuery) > 0) {
+            throw new StatusFailException("你已向该用户发送过PK邀请，请等待对方响应");
         }
 
         PkMatch pkMatch = new PkMatch();
@@ -108,21 +117,37 @@ public class PkManager {
     public PkMatchVO respondToPkInvite(Long matchId, boolean accept) throws StatusFailException {
         AccountProfile currentUser = getCurrentUser();
 
-        PkMatchVO matchVO = pkMatchEntityService.getPkMatchById(matchId);
-        if (matchVO == null) {
+        PkMatch pkMatch = pkMatchEntityService.getById(matchId);
+        if (pkMatch == null) {
             throw new StatusFailException("PK对战不存在");
         }
 
-        if (matchVO.getStatus() != 0) {
+        if (pkMatch.getStatus() != 0) {
             throw new StatusFailException("该PK邀请已失效");
         }
 
+        PkMatchVO matchVO = pkMatchEntityService.getPkMatchById(matchId);
         if (!currentUser.getUid().equals(matchVO.getOpponentUid())) {
             throw new StatusFailException("你不是该邀请的接收者");
         }
 
-        PkMatch pkMatch = pkMatchEntityService.getById(matchId);
+        // 检查是否过期（6小时）
+        if (pkMatch.getGmtCreate() != null) {
+            long sixHoursMs = 6 * 60 * 60 * 1000L;
+            if (System.currentTimeMillis() - pkMatch.getGmtCreate().getTime() > sixHoursMs) {
+                pkMatch.setStatus(7); // 标记为过期
+                pkMatchEntityService.updateById(pkMatch);
+                throw new StatusFailException("PK邀请已过期（超过6小时）");
+            }
+        }
+
         if (accept) {
+            // 接受前检查：当前用户是否有进行中的PK对战
+            List<PkMatchVO> myActive = pkMatchEntityService.getActivePkMatchByUserId(currentUser.getUid());
+            if (myActive != null && !myActive.isEmpty()) {
+                throw new StatusFailException("你已有一场进行中的PK对战，请先结束");
+            }
+
             pkMatch.setStatus(1);
             pkMatch.setStartTime(new Date());
         } else {
@@ -130,7 +155,32 @@ public class PkManager {
         }
         pkMatchEntityService.updateById(pkMatch);
 
+        // 接受/拒绝后，清理当前用户的其他pending邀请（接受时自动取消，拒绝时一并清理）
+        cancelOtherPendingInvites(currentUser.getUid(), matchId);
+
         return pkMatchEntityService.getPkMatchById(matchId);
+    }
+
+    /**
+     * 取消当前用户的其他待处理邀请
+     * （接受或拒绝一个邀请后，清理该用户的其他status=0邀请，避免残留）
+     */
+    private void cancelOtherPendingInvites(String uid, Long excludeMatchId) {
+        // 取消该用户作为发起者的其他待接受邀请 (status=0 → 6)
+        QueryWrapper<PkMatch> initiatorQuery = new QueryWrapper<>();
+        initiatorQuery.eq("initiator_uid", uid)
+                .eq("status", 0)
+                .ne("id", excludeMatchId);
+        PkMatch updateAsInitiator = new PkMatch().setStatus(6);
+        pkMatchEntityService.update(updateAsInitiator, initiatorQuery);
+
+        // 取消该用户作为接收者的其他待接受邀请 (status=0 → 5)
+        QueryWrapper<PkMatch> opponentQuery = new QueryWrapper<>();
+        opponentQuery.eq("opponent_uid", uid)
+                .eq("status", 0)
+                .ne("id", excludeMatchId);
+        PkMatch updateAsOpponent = new PkMatch().setStatus(5);
+        pkMatchEntityService.update(updateAsOpponent, opponentQuery);
     }
 
     /**
@@ -357,6 +407,14 @@ public class PkManager {
     public List<PkMatchVO> getMyPendingInvites() {
         AccountProfile currentUser = getCurrentUser();
         return pkMatchEntityService.getPendingPkMatchByUserId(currentUser.getUid());
+    }
+
+    /**
+     * 获取当前用户所有待处理的邀请（包括发出的和收到的）
+     */
+    public List<PkMatchVO> getMyAllPendingInvites() {
+        AccountProfile currentUser = getCurrentUser();
+        return pkMatchEntityService.getMyAllPendingInvites(currentUser.getUid());
     }
 
     /**

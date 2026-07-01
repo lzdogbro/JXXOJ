@@ -732,7 +732,7 @@
                     size="small"
                     @click.native="openPkDialog"
                     :disabled="!isAuthenticated || submitDisabled"
-                    class="fl-right"
+                    class="fl-left"
                     style="margin-right: 10px; margin-left: 15px;"
                   >
                     <svg

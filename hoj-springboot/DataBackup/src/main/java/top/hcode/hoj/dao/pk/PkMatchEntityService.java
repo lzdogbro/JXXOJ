@@ -19,5 +19,7 @@ public interface PkMatchEntityService extends IService<PkMatch> {
 
     List<PkMatchVO> getPendingPkMatchByUserId(String uid);
 
+    List<PkMatchVO> getMyAllPendingInvites(String uid);
+
     IPage<PkMatchVO> getPkHistory(Page<PkMatchVO> page, String uid);
 }

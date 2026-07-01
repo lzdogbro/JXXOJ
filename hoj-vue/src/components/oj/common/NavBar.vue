@@ -811,6 +811,7 @@ export default {
               + '<p>' + from + ', ' + problem + '</p>'
               + '<div class="pk-invite-notify-actions">'
               + '<button class="pk-notify-btn pk-notify-accept" data-pk-id="' + invite.id + '">' + this.$i18n.t('m.PK_Accept') + '</button>'
+              + '<button class="pk-notify-btn pk-notify-reject" data-pk-id="' + invite.id + '">' + this.$i18n.t('m.PK_Reject') + '</button>'
               + '<button class="pk-notify-btn pk-notify-dismiss" data-pk-id="' + invite.id + '">' + this.$i18n.t('m.PK_Dismiss') + '</button>'
               + '</div></div>';
             const notification = this.$notify({
@@ -827,10 +828,17 @@ export default {
               const currentEl = el[el.length - 1];
               if (currentEl) {
                 const acceptBtn = currentEl.querySelector('.pk-notify-accept');
+                const rejectBtn = currentEl.querySelector('.pk-notify-reject');
                 const dismissBtn = currentEl.querySelector('.pk-notify-dismiss');
                 if (acceptBtn) {
                   acceptBtn.addEventListener('click', () => {
                     this.acceptPkInvite(invite.id);
+                    notification.close();
+                  });
+                }
+                if (rejectBtn) {
+                  rejectBtn.addEventListener('click', () => {
+                    this.rejectPkInvite(invite.id);
                     notification.close();
                   });
                 }
@@ -864,9 +872,21 @@ export default {
         this.$message.error(this.$i18n.t('m.System_Error'));
       });
     },
+    rejectPkInvite(matchId) {
+      api.respondPkInvite({ matchId: matchId, accept: false }).then(res => {
+        this.$message.success(this.$i18n.t('m.PK_Reject'));
+        // 清除该邀请记录
+        this.notifiedInviteIds = this.notifiedInviteIds.filter(id => id !== matchId);
+        // 刷新store
+        let invites = this.$store.state.user.pkInvites.filter(i => i.id !== matchId);
+        this.$store.commit('setPkInvites', invites);
+      }).catch(() => {
+        this.$message.error(this.$i18n.t('m.System_Error'));
+      });
+    },
     dismissPkInvite(matchId) {
-      // 不再提示：只是关闭通知，不清除邀请（下次轮询时邀请可能仍存在，但已记录的不会再弹）
-      this.notifiedInviteIds = this.notifiedInviteIds.filter(id => id !== matchId);
+      // 不再提示：ID 已在 checkPkInvites 中添加到 notifiedInviteIds，
+      // 无需额外操作，下次轮询自动跳过该邀请
     },
     checkActivePkMatch() {
       // 如果已经在PK对战页面，不需要再检测跳转
