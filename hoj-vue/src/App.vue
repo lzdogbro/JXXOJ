@@ -234,7 +234,7 @@ export default {
       } else {
         this.isAdminView = false;
       }
-      if(newVal.name == 'ProblemDetails' || utils.isFocusModePage(newVal.name)){
+      if(newVal.name == 'ProblemDetails' || newVal.name == 'Chat' || utils.isFocusModePage(newVal.name)){
         this.showFooter = false;
       }else{
         this.showFooter = true;
@@ -265,7 +265,7 @@ export default {
       this.$store.dispatch("refreshUserAuthInfo");
     }
 
-    this.showFooter = !(this.$route.name == 'ProblemDetails'|| utils.isFocusModePage(this.$route.name));
+    this.showFooter = !(this.$route.name == 'ProblemDetails'|| this.$route.name == 'Chat' || utils.isFocusModePage(this.$route.name));
     window.addEventListener("visibilitychange", this.autoRefreshUserInfo);
   },
   mounted() {

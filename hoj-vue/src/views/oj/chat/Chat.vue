@@ -16,7 +16,7 @@
           </div>
           <div class="contact-info">
             <div class="contact-name">
-              <span class="contact-username">{{ contact.nickname || contact.username }}</span>
+              <span class="contact-username">{{ contact.username }}</span>
               <span class="contact-time">{{ formatTime(contact.lastTime) }}</span>
             </div>
             <div class="contact-preview">
@@ -38,7 +38,10 @@
         <div class="chat-message-header">
           <i v-if="mobileView" class="el-icon-arrow-left" style="font-size: 18px; margin-right: 10px; cursor: pointer;" @click="backToContacts"></i>
           <avatar :username="activeContact.nickname || activeContact.username" :inline="true" :size="36" color="#FFF" :src="activeContact.avatar"></avatar>
-          <span class="header-username">{{ activeContact.nickname || activeContact.username }}</span>
+          <span class="header-username">
+            {{ activeContact.username || activeContact.nickname }}
+            <span v-if="activeContact.nickname && activeContact.username && activeContact.nickname !== activeContact.username" class="header-nickname">{{ activeContact.nickname }}</span>
+          </span>
         </div>
         <div class="chat-message-body" ref="messageBody" @scroll.passive="onScroll">
           <div v-if="messages.length === 0 && !loadingMsg" class="chat-empty-msg">
@@ -312,9 +315,9 @@ export default {
 <style scoped>
 .chat-container {
   display: flex;
-  height: calc(100vh - 80px);
+  height: calc(100vh - 140px);
   margin: 20px auto;
-  max-width: 1000px;
+  width: 70%;
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
@@ -430,6 +433,12 @@ export default {
   margin-left: 10px;
   color: #303133;
 }
+.header-nickname {
+  font-size: 13px;
+  font-weight: normal;
+  color: #909399;
+  margin-left: 8px;
+}
 .chat-message-body {
   flex: 1;
   overflow-y: auto;
@@ -507,6 +516,7 @@ export default {
 @media screen and (max-width: 768px) {
   .chat-container {
     margin: 0;
+    width: 100%;
     height: calc(100vh - 56px);
     border-radius: 0;
     box-shadow: none;

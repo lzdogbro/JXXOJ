@@ -93,7 +93,7 @@ HOJ 是一个基于 Vue 和 Spring Boot、Spring Cloud Alibaba 构建的**前后
 #    cd hoj-springboot && mvn package -DskipTests -q
 
 # 3. 构建前端 dist
-#    cd hoj-vue && NODE_OPTIONS=--openssl-legacy-provider npm run build
+#    cd hoj-vue && npm run build
 
 # 4. 复制构建产物到 myhoj-deploy
 #    - hoj-backend-4.6.jar  → src/backend/

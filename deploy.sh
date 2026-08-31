@@ -58,7 +58,13 @@ build_backend() {
 build_frontend() {
     log_step "构建前端 dist..."
     cd "${FRONTEND_DIR}"
-    NODE_OPTIONS=--openssl-legacy-provider npm run build
+    local node_major
+    node_major="$(node -p 'process.versions.node.split(".")[0]')"
+    if [ "${node_major}" -ge 17 ]; then
+        NODE_OPTIONS=--openssl-legacy-provider npm run build
+    else
+        npm run build
+    fi
     if [ ! -d "${FRONTEND_DIR}/dist" ]; then
         log_error "前端构建失败: dist 目录不存在"
         exit 1
@@ -1125,6 +1131,33 @@ sync_artifacts() {
     log_info "构建产物同步完成!"
 }
 
+apply_database_migrations() {
+    local migration_file="${SQL_DIR}/hoj-pk-chat-update.sql"
+    local mysql_container="${MYSQL_CONTAINER_NAME:-hoj-mysql}"
+
+    if [ ! -f "${migration_file}" ]; then
+        log_error "数据库增量脚本不存在: ${migration_file}"
+        exit 1
+    fi
+
+    log_step "应用 PK 与私聊数据库增量..."
+    local attempt
+    for attempt in $(seq 1 30); do
+        if docker exec "${mysql_container}" sh -c 'mysqladmin ping -h localhost -u root -p"$MYSQL_ROOT_PASSWORD" --silent' >/dev/null 2>&1; then
+            break
+        fi
+        sleep 2
+    done
+
+    if ! docker exec "${mysql_container}" sh -c 'mysqladmin ping -h localhost -u root -p"$MYSQL_ROOT_PASSWORD" --silent' >/dev/null 2>&1; then
+        log_error "MySQL 未在限定时间内就绪，未应用数据库增量"
+        exit 1
+    fi
+
+    docker exec -i "${mysql_container}" sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" hoj' < "${migration_file}"
+    log_info "PK 与私聊数据库增量已应用"
+}
+
 # =============================================================================
 # Docker 部署控制
 # =============================================================================
@@ -1140,6 +1173,8 @@ docker_up() {
     # 重新构建并启动
     log_info "构建镜像并启动容器..."
     docker-compose up -d --build
+
+    apply_database_migrations
 
     log_info "Docker 容器启动完成!"
     echo ""
