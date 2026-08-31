@@ -81,3 +81,6 @@ coverage/
 
 # ========== Docker ==========
 docker-compose.override.yml
+
+# ========== 数据库备份（含用户数据/密码，禁止入库）==========
+sqlAndsetting/hoj[0-9][0-9]*.sql
