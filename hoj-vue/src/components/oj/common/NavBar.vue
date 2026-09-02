@@ -31,20 +31,8 @@
                 :key="item.key"
                 :index="item.index"
                 :ref="'nav-' + item.key"
-                :class="[item.key === 'chat' && hasUnreadChat ? 'nav-chat-flash' : '', item.key === 'chat' ? 'nav-chat-item' : '']"
               >
-                <template v-if="item.key === 'chat'">
-                  <template v-if="chatShowSender">
-                    {{ chatDisplayText }}
-                  </template>
-                  <template v-else>
-                    <i class="el-icon-chat-dot-round"></i
-                    >{{ $t('m.NavBar_Chat') }}
-                  </template>
-                </template>
-                <template v-else
-                  ><i :class="item.icon"></i>{{ $t(item.i18n) }}</template
-                >
+                <i :class="item.icon"></i>{{ $t(item.i18n) }}
               </el-menu-item>
               <el-submenu
                 v-else
@@ -73,7 +61,7 @@
                   v-if="item.type === 'item'"
                   :key="'o-' + item.key"
                   :index="item.index"
-                  >{{ item.key === 'chat' ? chatDisplayText : $t(item.i18n) }}</el-menu-item
+                  >{{ $t(item.i18n) }}</el-menu-item
                 >
                 <template v-else>
                   <el-menu-item
@@ -253,7 +241,26 @@
                 </el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
+            <div
+              class="nav-chat"
+              :title="$t('m.NavBar_Chat')"
+              @click="goChat"
+            >
+              <el-badge :value="unreadMessage.chat" :hidden="!hasUnreadChat" :max="99">
+                <i class="el-icon-chat-dot-round"></i>
+              </el-badge>
+            </div>
           </template>
+          <div class="nav-search">
+            <el-input
+              v-model="problemKeyword"
+              size="small"
+              :placeholder="$t('m.NavBar_Search_Problem')"
+              prefix-icon="el-icon-search"
+              clearable
+              @keyup.enter.native="searchProblem"
+            ></el-input>
+          </div>
         </el-menu>
       </div>
       <div id="header-hidden" v-show="isScrolled">
@@ -290,6 +297,23 @@
           v-show="!isAuthenticated && websiteConfig.register"
           >{{ $t('m.NavBar_Register') }}</mu-button
         >
+
+        <mu-button
+          flat
+          slot="right"
+          v-show="isAuthenticated"
+          @click="goChat"
+        >
+          <mu-icon value=":el-icon-chat-dot-round" size="24"></mu-icon>
+          <svg
+            v-if="hasUnreadChat"
+            width="10"
+            height="10"
+            style="margin-left: -11px;margin-top: -13px;"
+          >
+            <circle cx="5" cy="5" r="5" style="fill: red;"></circle>
+          </svg>
+        </mu-button>
 
         <mu-menu slot="right" v-show="isAuthenticated" :open.sync="openmsgmenu">
           <mu-button flat>
@@ -451,30 +475,52 @@
 
           <mu-list-item
             button
-            to="/problem"
-            @click="opendrawer = !opendrawer"
-            active-class="mobile-menu-active"
-          >
-            <mu-list-item-action>
-              <mu-icon value=":el-icon-s-grid" size="24"></mu-icon>
-            </mu-list-item-action>
-            <mu-list-item-title>{{
-              $t('m.NavBar_Problem')
-            }}</mu-list-item-title>
-          </mu-list-item>
-
-          <mu-list-item
-            button
-            to="/training"
-            @click="opendrawer = !opendrawer"
-            active-class="mobile-menu-active"
+            :ripple="false"
+            nested
+            :open="openSideMenu === 'practice'"
+            @toggle-nested="openSideMenu = arguments[0] ? 'practice' : ''"
           >
             <mu-list-item-action>
               <mu-icon value=":el-icon-s-claim" size="24"></mu-icon>
             </mu-list-item-action>
-            <mu-list-item-title>{{
-              $t('m.NavBar_Training')
-            }}</mu-list-item-title>
+            <mu-list-item-title>{{ $t('m.NavBar_Practice') }}</mu-list-item-title>
+            <mu-list-item-action>
+              <mu-icon
+                class="toggle-icon"
+                size="24"
+                value=":el-icon-arrow-down"
+              ></mu-icon>
+            </mu-list-item-action>
+            <mu-list-item
+              button
+              :ripple="false"
+              slot="nested"
+              to="/problem"
+              @click="opendrawer = !opendrawer"
+              active-class="mobile-menu-active"
+            >
+              <mu-list-item-title>{{ $t('m.NavBar_Problem') }}</mu-list-item-title>
+            </mu-list-item>
+            <mu-list-item
+              button
+              :ripple="false"
+              slot="nested"
+              to="/training"
+              @click="opendrawer = !opendrawer"
+              active-class="mobile-menu-active"
+            >
+              <mu-list-item-title>{{ $t('m.NavBar_Training') }}</mu-list-item-title>
+            </mu-list-item>
+            <mu-list-item
+              button
+              :ripple="false"
+              slot="nested"
+              to="/assignment"
+              @click="opendrawer = !opendrawer"
+              active-class="mobile-menu-active"
+            >
+              <mu-list-item-title>{{ $t('m.NavBar_Assignment') }}</mu-list-item-title>
+            </mu-list-item>
           </mu-list-item>
 
           <mu-list-item
@@ -564,31 +610,6 @@
 
           <mu-list-item
             button
-            to="/assignment"
-            @click="opendrawer = !opendrawer"
-            active-class="mobile-menu-active"
-          >
-            <mu-list-item-action>
-              <mu-icon value=":el-icon-notebook-2" size="24"></mu-icon>
-            </mu-list-item-action>
-            <mu-list-item-title>{{ $t('m.NavBar_Assignment') }}</mu-list-item-title>
-          </mu-list-item>
-
-          <mu-list-item
-            button
-            to="/chat"
-            :class="hasUnreadChat ? 'nav-chat-flash' : ''"
-            @click="opendrawer = !opendrawer"
-            active-class="mobile-menu-active"
-          >
-            <mu-list-item-action v-show="!chatShowSender">
-              <mu-icon value=":el-icon-chat-dot-round" size="24"></mu-icon>
-            </mu-list-item-action>
-            <mu-list-item-title>{{ chatDisplayText }}</mu-list-item-title>
-          </mu-list-item>
-
-          <mu-list-item
-            button
             :ripple="false"
             nested
             :open="openSideMenu === 'more'"
@@ -627,19 +648,6 @@
             >
               <mu-list-item-title>{{
                 $t('m.NavBar_Developer')
-              }}</mu-list-item-title>
-            </mu-list-item>
-            <mu-list-item
-              button
-              :ripple="false"
-              slot="nested"
-              to="/group"
-              class="nav-deprecated"
-              @click="opendrawer = !opendrawer"
-              active-class="mobile-menu-active"
-            >
-              <mu-list-item-title>{{
-                $t('m.NavBar_Group_Deprecated')
               }}</mu-list-item-title>
             </mu-list-item>
           </mu-list-item>
@@ -717,7 +725,6 @@ export default {
     clearInterval(this.pkTimer);
     clearTimeout(this.fallbackTimer);
     clearTimeout(this.navFontTimer);
-    this.stopChatAlternate();
   },
   data() {
     return {
@@ -736,9 +743,7 @@ export default {
       fallbackTimer: null,
       navFontTimer: null,
       correctingNav: false,
-      chatSender: '',
-      chatShowSender: false,
-      chatAlternateTimer: null,
+      problemKeyword: '',
       notifiedInviteIds: [],
       // 桌面端主导航（从左到右的顺序，越靠右越先被收进「更多」）
       primaryNav: [
@@ -751,7 +756,8 @@ export default {
           i18n: 'm.NavBar_Practice',
           children: [
             { index: '/problem', i18n: 'm.NavBar_Problem' },
-            { index: '/training', i18n: 'm.NavBar_Training' }
+            { index: '/training', i18n: 'm.NavBar_Training' },
+            { index: '/assignment', i18n: 'm.NavBar_Assignment' }
           ]
         },
         { key: 'contest', type: 'item', index: '/contest', icon: 'el-icon-trophy', i18n: 'm.NavBar_Contest' },
@@ -768,14 +774,11 @@ export default {
           ]
         },
         { key: 'discussion', type: 'item', index: '/discussion', icon: 'el-icon-s-comment', i18n: 'm.NavBar_Discussion', condition: 'openPublicDiscussion' },
-        { key: 'assignment', type: 'item', index: '/assignment', icon: 'el-icon-notebook-2', i18n: 'm.NavBar_Assignment' },
-        { key: 'chat', type: 'item', index: '/chat', icon: 'el-icon-chat-dot-round', i18n: 'm.NavBar_Chat' },
       ],
       // 「更多」里固定展示的项（始终保留，收在最后）
       moreFixed: [
         { index: '/introduction', i18n: 'm.NavBar_Introduction' },
         { index: '/developer', i18n: 'm.NavBar_Developer' },
-        { index: '/group', i18n: 'm.NavBar_Group_Deprecated', deprecated: true },
       ],
       // 主导航当前展示的数量（初始给个大值表示全部展示）
       visibleCount: 99,
@@ -792,37 +795,19 @@ export default {
         this.mobileNar = false;
       }
     },
-    fetchChatSender() {
-      api.getChatContacts().then((res) => {
-        const contacts = res.data.data || [];
-        const unread = contacts.find((c) => c.unreadCount > 0);
-        if (unread) {
-          this.chatSender = unread.username || unread.nickname || '';
-        }
-      }).catch(() => {});
+    goChat() {
+      this.$router.push({ path: '/chat' });
     },
-    startChatAlternate() {
-      if (this.chatAlternateTimer) return;
-      this.chatShowSender = false;
-      // 熄灭后第 0.2s（即灭到最暗 0.2s + 0.2s）切成用户名，此后每 2.4s 交替
-      this.chatAlternateTimer = setTimeout(() => {
-        this.chatShowSender = true;
-        this.chatAlternateTimer = setInterval(() => {
-          this.chatShowSender = !this.chatShowSender;
-        }, 2400);
-      }, 400);
-    },
-    stopChatAlternate() {
-      if (this.chatAlternateTimer) {
-        clearInterval(this.chatAlternateTimer);
-        this.chatAlternateTimer = null;
-      }
-      this.chatShowSender = false;
+    searchProblem() {
+      const keyword = (this.problemKeyword || '').trim();
+      if (!keyword) return;
+      this.problemKeyword = '';
+      this.$router.push({ path: '/problem', query: { keyword } });
     },
     // 右侧登录/注册按钮或用户下拉区域的最左边界（用于计算可用宽度）
     getRightBlockLeft() {
       let left = null;
-      const els = this.$el.querySelectorAll('.btn-menu, .drop-menu, .drop-avatar, .drop-msg');
+      const els = this.$el.querySelectorAll('.btn-menu, .drop-menu, .drop-avatar, .drop-msg, .nav-chat, .nav-search');
       for (const el of els) {
         if (el.offsetParent === null) continue;
         const r = el.getBoundingClientRect();
@@ -875,7 +860,7 @@ export default {
       const menuEl = this.getRefEl(this.$refs.navMenu);
       if (!menuEl) return false;
       const menuTop = menuEl.getBoundingClientRect().top;
-      const els = this.$el.querySelectorAll('.btn-menu, .drop-menu, .drop-avatar, .drop-msg');
+      const els = this.$el.querySelectorAll('.btn-menu, .drop-menu, .drop-avatar, .drop-msg, .nav-chat, .nav-search');
       for (const el of els) {
         if (el.offsetParent === null) continue;
         const r = el.getBoundingClientRect();
@@ -950,7 +935,6 @@ export default {
       }
     },
     getUnreadMsgCount() {
-      this.fetchChatSender();
       api.getUnreadMsgCount().then((res) => {
         let data = res.data.data;
         this.$store.dispatch('updateUnreadMessageCount', data);
@@ -1180,12 +1164,6 @@ export default {
     hasUnreadChat() {
       return (this.unreadMessage && this.unreadMessage.chat > 0) || false;
     },
-    chatDisplayText() {
-      if (this.hasUnreadChat && this.chatShowSender && this.chatSender) {
-        return this.chatSender;
-      }
-      return this.$t('m.NavBar_Chat');
-    },
     activeMenuName() {
       if (this.$route.path.split('/')[1] == 'submission-detail') {
         return '/status';
@@ -1253,7 +1231,6 @@ export default {
         clearInterval(this.msgTimer);
         clearInterval(this.pkTimer);
         this.pkTimer = null;
-        this.stopChatAlternate();
       }
     },
     '$store.state.user.contentReady'(val) {
@@ -1269,15 +1246,6 @@ export default {
     'websiteConfig.openPublicDiscussion'() {
       // 讨论区开关变化会影响菜单项数量，需要重新测量
       this.remeasureNavOverflow();
-    },
-    'unreadMessage.chat'(newCount) {
-      if (newCount > 0 && this.isAuthenticated) {
-        // 未读数变化（新增/清零/换人）时，重新拉取最新未读发送者并保持闪动
-        this.fetchChatSender();
-        this.startChatAlternate();
-      } else {
-        this.stopChatAlternate();
-      }
     },
     $route(to, from){
       this.switchMode();
@@ -1381,22 +1349,29 @@ export default {
 .nav-msg-flash {
   animation: navMsgFlash 2.4s ease-in-out infinite;
 }
-/* 私聊闪烁：灭了后保持 0.4s 再亮（0.2s 灭到最暗，0.4s 保持，0.2s 亮回） */
-@keyframes navChatFlash {
-  0%, 100% { opacity: 1; }
-  8.33% { opacity: 0; }
-  25% { opacity: 0; }
-  33.33% { opacity: 1; }
+/* 右侧私聊图标 */
+.nav-chat {
+  float: right;
+  font-size: 25px;
+  margin-right: 16px;
+  position: relative;
+  margin-top: 13px;
+  cursor: pointer;
+  color: #495060;
 }
-.nav-chat-flash {
-  animation: navChatFlash 2.4s ease-in-out infinite;
+.nav-chat:hover {
+  color: #2E95FB;
 }
-.nav-chat-item {
-  width: 83px;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.nav-chat .el-badge__content {
+  top: 2px;
+  right: 4px;
+}
+/* 右侧题号搜索框 */
+.nav-search {
+  float: right;
+  width: 180px;
+  margin-top: 13px;
+  margin-right: 10px;
 }
 .btn-menu {
   font-size: 16px;

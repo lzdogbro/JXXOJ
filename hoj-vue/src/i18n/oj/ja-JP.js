@@ -24,6 +24,7 @@ export const m = {
   NavBar_Group: 'チーム',
   NavBar_Assignment: '課題',
   NavBar_Practice: '練習',
+  NavBar_Search_Problem: '問題番号・タイトル検索',
   NavBar_Chat: 'チャット',
   NavBar_More: 'もっと見る',
   NavBar_Group_Deprecated: 'チーム',

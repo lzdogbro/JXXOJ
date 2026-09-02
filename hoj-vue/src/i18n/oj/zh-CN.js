@@ -24,6 +24,7 @@ export const m = {
   NavBar_Group: '团队',
   NavBar_Assignment: '作业',
   NavBar_Practice: '练习',
+  NavBar_Search_Problem: '搜索题号/题名',
   NavBar_More: '更多',
   NavBar_Group_Deprecated: '团队',
   NavBar_About: '关于',
