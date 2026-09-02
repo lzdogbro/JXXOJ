@@ -103,6 +103,11 @@ public class RemoteJudgeDTO implements Serializable {
     private Long cid;
 
     /**
+     * 远程测评的作业id，非作业提交默认为0
+     */
+    private Long aid;
+
+    /**
      * 远程测评的团队id
      */
     private Long gid;

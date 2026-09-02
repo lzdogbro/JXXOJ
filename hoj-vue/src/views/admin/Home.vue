@@ -99,6 +99,26 @@
           }}</el-menu-item>
         </el-submenu>
 
+        <el-submenu index="assignment">
+          <template slot="title"
+            ><i
+              class="el-icon-s-order"
+              aria-hidden="true"
+              style="font-size: 20px;"
+            ></i
+            >{{ $t('m.Assignment_Admin') }}</template
+          >
+          <el-menu-item index="/admin/assignment">{{
+            $t('m.Assignment_List')
+          }}</el-menu-item>
+          <el-menu-item index="/admin/assignment/create">{{
+            $t('m.Create_Assignment')
+          }}</el-menu-item>
+          <el-menu-item index="/admin/assignment/group">{{
+            $t('m.Student_Group_Admin')
+          }}</el-menu-item>
+        </el-submenu>
+
         <el-submenu index="discussion">
           <template slot="title"
             ><i class="fa fa-comments fa-size" aria-hidden="true"></i
@@ -461,6 +481,64 @@
             >
               <mu-list-item-title>{{
                 $t('m.Create_Contest')
+              }}</mu-list-item-title>
+            </mu-list-item>
+          </mu-list-item>
+
+          <mu-list-item
+            button
+            :ripple="false"
+            nested
+            :open="openSideMenu === 'assignment'"
+            @toggle-nested="openSideMenu = arguments[0] ? 'assignment' : ''"
+          >
+            <mu-list-item-action>
+              <mu-icon value=":el-icon-s-order" size="24"></mu-icon>
+            </mu-list-item-action>
+            <mu-list-item-title>{{
+              $t('m.Assignment_Admin')
+            }}</mu-list-item-title>
+            <mu-list-item-action>
+              <mu-icon
+                class="toggle-icon"
+                size="24"
+                value=":el-icon-arrow-down"
+              ></mu-icon>
+            </mu-list-item-action>
+            <mu-list-item
+              button
+              :ripple="false"
+              slot="nested"
+              to="/admin/assignment"
+              @click="opendrawer = !opendrawer"
+              active-class="mobile-menu-active"
+            >
+              <mu-list-item-title>{{
+                $t('m.Assignment_List')
+              }}</mu-list-item-title>
+            </mu-list-item>
+            <mu-list-item
+              button
+              :ripple="false"
+              slot="nested"
+              to="/admin/assignment/create"
+              @click="opendrawer = !opendrawer"
+              active-class="mobile-menu-active"
+            >
+              <mu-list-item-title>{{
+                $t('m.Create_Assignment')
+              }}</mu-list-item-title>
+            </mu-list-item>
+            <mu-list-item
+              button
+              :ripple="false"
+              slot="nested"
+              to="/admin/assignment/group"
+              @click="opendrawer = !opendrawer"
+              active-class="mobile-menu-active"
+            >
+              <mu-list-item-title>{{
+                $t('m.Student_Group_Admin')
               }}</mu-list-item-title>
             </mu-list-item>
           </mu-list-item>

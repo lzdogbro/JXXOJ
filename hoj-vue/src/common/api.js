@@ -513,6 +513,39 @@ const ojApi = {
   // ------------------------------------------------------------------------------------------------
 
 
+  // ------------------------------------作业模块的请求---------------------------------------------
+
+  // 获取布置给我的作业列表（分页）
+  getAssignmentList(currentPage, limit) {
+    return ajax('/api/get-assignment-list', 'get', {
+      params: { currentPage, limit }
+    })
+  },
+
+  // 获取单份作业 + 我的完成进度
+  getAssignmentDetail(aid) {
+    return ajax('/api/get-assignment-detail', 'get', {
+      params: { aid }
+    })
+  },
+
+  // 获取作业题目列表
+  getAssignmentProblemList(aid) {
+    return ajax('/api/get-assignment-problem-list', 'get', {
+      params: { aid }
+    })
+  },
+
+  // 获取作业题目详情
+  getAssignmentProblemDetail(aid, displayId) {
+    return ajax('/api/get-assignment-problem-detail', 'get', {
+      params: { aid, displayId }
+    })
+  },
+
+  // ------------------------------------------------------------------------------------------------
+
+
   // 比赛列表页的请求
   getContestList(currentPage, limit, query) {
     let params = {
@@ -1980,6 +2013,107 @@ const adminApi = {
   admin_updateDiscussionReport(data) {
     return ajax("/api/admin/discussion-report", 'put', {
       data
+    })
+  },
+
+  // 获取作业列表
+  admin_getAssignmentList(currentPage, limit, keyword) {
+    let params = { currentPage, limit }
+    if (keyword) {
+      params.keyword = keyword
+    }
+    return ajax('/api/admin/assignment/get-assignment-list', 'get', {
+      params: params
+    })
+  },
+  // 获取单个作业详情（含题目与学生完成情况）
+  admin_getAssignment(aid) {
+    return ajax('/api/admin/assignment/get-assignment', 'get', {
+      params: {
+        aid
+      }
+    })
+  },
+  // 创建作业
+  admin_createAssignment(data) {
+    return ajax('/api/admin/assignment', 'post', {
+      data
+    })
+  },
+  // 修改作业
+  admin_updateAssignment(data) {
+    return ajax('/api/admin/assignment', 'put', {
+      data
+    })
+  },
+  // 删除作业
+  admin_deleteAssignment(aid) {
+    return ajax('/api/admin/assignment', 'delete', {
+      params: {
+        aid
+      }
+    })
+  },
+  // 发布作业
+  admin_publishAssignment(data) {
+    return ajax('/api/admin/assignment/publish', 'post', {
+      data
+    })
+  },
+  // 延长作业截止时间
+  admin_extendAssignment(data) {
+    return ajax('/api/admin/assignment/extend', 'post', {
+      data
+    })
+  },
+  // 获取学生组列表
+  admin_getStudentGroupList() {
+    return ajax('/api/admin/assignment/group/get-group-list', 'get')
+  },
+  // 获取学生组成员列表
+  admin_getStudentGroupUserList(gid) {
+    return ajax('/api/admin/assignment/group/get-group-user-list', 'get', {
+      params: {
+        gid
+      }
+    })
+  },
+  // 创建学生组
+  admin_createStudentGroup(data) {
+    return ajax('/api/admin/assignment/group', 'post', {
+      data
+    })
+  },
+  // 修改学生组
+  admin_updateStudentGroup(data) {
+    return ajax('/api/admin/assignment/group', 'put', {
+      data
+    })
+  },
+  // 删除学生组
+  admin_deleteStudentGroup(gid) {
+    return ajax('/api/admin/assignment/group', 'delete', {
+      params: {
+        gid
+      }
+    })
+  },
+  // 添加学生组成员
+  admin_addStudentGroupUser(gid, uidList) {
+    return ajax('/api/admin/assignment/group/add-user', 'post', {
+      params: {
+        gid
+      },
+      data: uidList
+    })
+  },
+  // 移除学生组成员
+  admin_removeStudentGroupUser(gid, uid) {
+    return ajax('/api/admin/assignment/group/remove-user', 'delete', {
+      params: {
+        gid,
+        uid
+      }
     })
   }
 }

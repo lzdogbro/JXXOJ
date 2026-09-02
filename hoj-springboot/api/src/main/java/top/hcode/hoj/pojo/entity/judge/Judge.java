@@ -82,6 +82,9 @@ public class Judge implements Serializable {
     @ApiModelProperty(value = "比赛中题目排序id，非比赛提交默认为0")
     private Long cpid;
 
+    @ApiModelProperty(value = "作业id，非作业提交默认为0")
+    private Long aid;
+
     @ApiModelProperty(value = "团队id，非团队内题目提交为null")
     private Long gid;
 

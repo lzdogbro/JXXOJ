@@ -20,6 +20,9 @@ const TrainingList= ()=>import('@/views/admin/training/TrainingList')
 const TrainingProblemList= ()=>import('@/views/admin/training/TrainingProblemList')
 const TrainingCategory= ()=>import('@/views/admin/training/Category')
 const DiscussionList= ()=>import('@/views/admin/discussion/Discussion')
+const Assignment= ()=>import('@/views/admin/assignment/Assignment')
+const AssignmentList= ()=>import('@/views/admin/assignment/AssignmentList')
+const StudentGroup= ()=>import('@/views/admin/assignment/StudentGroup')
 const adminRoutes= [
     {
       path: '/admin/login',
@@ -187,6 +190,30 @@ const adminRoutes= [
           name: 'admin-discussion-list',
           component: DiscussionList,
           meta: { title:'Discussion Admin'}
+        },
+        {
+          path: 'assignment',
+          name: 'admin-assignment-list',
+          component: AssignmentList,
+          meta: { title:'Assignment List'}
+        },
+        {
+          path: 'assignment/create',
+          name: 'admin-create-assignment',
+          component: Assignment,
+          meta: { title:'Create Assignment'}
+        },
+        {
+          path: 'assignment/group',
+          name: 'admin-assignment-group',
+          component: StudentGroup,
+          meta: { title:'Student Group Admin'}
+        },
+        {
+          path: 'assignment/:assignmentId/edit',
+          name: 'admin-edit-assignment',
+          component: Assignment,
+          meta: { title:'Edit Assignment'}
         },
       ]
     },
