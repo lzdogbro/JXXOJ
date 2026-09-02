@@ -36,7 +36,7 @@
             <li
               class="dataNavListItem"
               :class="pid == item.pid?'is-active':''"
-              @click="goProblem(item.problemId)"
+              @click="goProblem(item)"
               :style="{transform:'translateX(-'+move+'px)'}"
             >
               <template v-if="item.status == 0">
@@ -98,6 +98,10 @@ export default {
       type: Number,
       default: null,
     },
+    aid: {
+      type: Number,
+      default: null,
+    },
   },
   data() {
     return {
@@ -117,7 +121,7 @@ export default {
   },
   methods: {
     getFullScreenProblemList() {
-      api.getFullScreenProblemList(this.tid, this.cid).then(
+      api.getFullScreenProblemList(this.tid, this.cid, this.aid).then(
         (res) => {
           this.navList = res.data.data;
           this.$nextTick(() => {
@@ -190,15 +194,22 @@ export default {
         this.JUDGE_STATUS[status].rgb
       );
     },
-    goProblem(problemId) {
+    goProblem(item) {
+      let params = {
+        contestID: this.cid,
+        trainingID: this.tid,
+        groupID: this.gid,
+      };
+      if (this.aid) {
+        // 作业专注模式：路由参数用 assignmentID + 展示编号 displayId（A/B/C）
+        params.assignmentID = this.aid;
+        params.problemID = item.displayId;
+      } else {
+        params.problemID = item.problemId;
+      }
       this.$router.push({
         name: this.$route.name,
-        params: {
-          contestID: this.cid,
-          problemID: problemId,
-          trainingID: this.tid,
-          groupID: this.gid,
-        },
+        params,
       });
     },
   },

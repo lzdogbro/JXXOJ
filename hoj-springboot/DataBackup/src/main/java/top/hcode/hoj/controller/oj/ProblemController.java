@@ -113,8 +113,9 @@ public class ProblemController {
     @RequiresAuthentication
     @GetMapping("/get-full-screen-problem-list")
     public CommonResult<List<ProblemFullScreenListVO>> getFullScreenProblemList(@RequestParam(value = "tid", required = false) Long tid,
-                                                                                @RequestParam(value = "cid", required = false) Long cid) {
-        return problemService.getFullScreenProblemList(tid, cid);
+                                                                                @RequestParam(value = "cid", required = false) Long cid,
+                                                                                @RequestParam(value = "aid", required = false) Long aid) {
+        return problemService.getFullScreenProblemList(tid, cid, aid);
     }
 
 }
