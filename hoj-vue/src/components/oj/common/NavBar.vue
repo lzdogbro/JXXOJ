@@ -3,13 +3,14 @@
     <template v-if="!mobileNar">
       <div id="header">
         <el-menu
+          ref="navMenu"
           :default-active="activeMenuName"
           mode="horizontal"
           router
           active-text-color="#2196f3"
           text-color="#495060"
         >
-          <div class="logo">
+          <div ref="navLogo" class="logo">
             <el-tooltip
               :content="$t('m.Click_To_Change_Web_Language')"
               placement="bottom"
@@ -24,57 +25,59 @@
             </el-tooltip>
           </div>
           <template v-if="mode == 'defalut'">
-            <el-menu-item index="/home"
-              ><i class="el-icon-s-home"></i>{{ $t('m.NavBar_Home') }}</el-menu-item
-            >
-            <el-menu-item index="/problem"
-              ><i class="el-icon-s-grid"></i
-              >{{ $t('m.NavBar_Problem') }}</el-menu-item
-            >
-            <el-menu-item index="/training"
-              ><i class="el-icon-s-claim"></i
-              >{{ $t('m.NavBar_Training') }}</el-menu-item
-            >
-            <el-menu-item index="/contest"
-              ><i class="el-icon-trophy"></i
-              >{{ $t('m.NavBar_Contest') }}</el-menu-item
-            >
-            <el-menu-item index="/status"
-              ><i class="el-icon-s-marketing"></i
-              >{{ $t('m.NavBar_Status') }}</el-menu-item
-            >
-            <el-submenu index="rank">
-              <template slot="title"
-                ><i class="el-icon-s-data"></i>{{ $t('m.NavBar_Rank') }}</template
+            <template v-for="item in visiblePrimary">
+              <el-menu-item
+                v-if="item.type === 'item'"
+                :key="item.key"
+                :index="item.index"
+                :ref="'nav-' + item.key"
+                ><i :class="item.icon"></i>{{ $t(item.i18n) }}</el-menu-item
               >
-              <el-menu-item index="/acm-rank">{{
-                $t('m.NavBar_ACM_Rank')
-              }}</el-menu-item>
-              <el-menu-item index="/oi-rank">{{
-                $t('m.NavBar_OI_Rank')
-              }}</el-menu-item>
-            </el-submenu>
-            <el-menu-item index="/discussion"
-              v-if="websiteConfig.openPublicDiscussion"
-              ><i class="el-icon-s-comment"></i
-              >{{ $t('m.NavBar_Discussion') }}</el-menu-item
-            >
-            <el-menu-item index="/group"
-              ><i
-                class="fa fa-users navbar-icon"
-              ></i
-              >{{ $t('m.NavBar_Group') }}</el-menu-item
-            >
-            <el-submenu index="about">
-              <template slot="title"
-                ><i class="el-icon-info"></i>{{ $t('m.NavBar_About') }}</template
+              <el-submenu
+                v-else
+                :key="item.key"
+                :index="item.index"
+                :ref="'nav-' + item.key"
               >
-              <el-menu-item index="/introduction">{{
-                $t('m.NavBar_Introduction')
-              }}</el-menu-item>
-              <el-menu-item index="/developer">{{
-                $t('m.NavBar_Developer')
-              }}</el-menu-item>
+                <template slot="title"
+                  ><i :class="item.icon"></i>{{ $t(item.i18n) }}</template
+                >
+                <el-menu-item
+                  v-for="c in item.children"
+                  :key="c.index"
+                  :index="c.index"
+                  >{{ $t(c.i18n) }}</el-menu-item
+                >
+              </el-submenu>
+            </template>
+            <el-submenu index="more" ref="nav-more">
+              <template slot="title"
+                ><i class="el-icon-more-outline"></i
+                >{{ $t('m.NavBar_More') }}</template
+              >
+              <template v-for="item in overflowPrimary">
+                <el-menu-item
+                  v-if="item.type === 'item'"
+                  :key="'o-' + item.key"
+                  :index="item.index"
+                  >{{ $t(item.i18n) }}</el-menu-item
+                >
+                <template v-else>
+                  <el-menu-item
+                    v-for="c in item.children"
+                    :key="'oc-' + c.index"
+                    :index="c.index"
+                    >{{ $t(c.i18n) }}</el-menu-item
+                  >
+                </template>
+              </template>
+              <el-menu-item
+                v-for="m in moreFixed"
+                :key="'m-' + m.index"
+                :index="m.index"
+                :class="m.deprecated ? 'nav-deprecated' : ''"
+                >{{ $t(m.i18n) }}</el-menu-item
+              >
             </el-submenu>
         </template>
         <template v-else-if="mode == 'training'">
@@ -579,27 +582,27 @@
 
           <mu-list-item
             button
-            to="/group"
+            to="/assignment"
             @click="opendrawer = !opendrawer"
             active-class="mobile-menu-active"
           >
             <mu-list-item-action>
-              <mu-icon value=":fa fa-users" size="24"></mu-icon>
+              <mu-icon value=":el-icon-notebook-2" size="24"></mu-icon>
             </mu-list-item-action>
-            <mu-list-item-title>{{ $t('m.NavBar_Group') }}</mu-list-item-title>
+            <mu-list-item-title>{{ $t('m.NavBar_Assignment') }}</mu-list-item-title>
           </mu-list-item>
 
           <mu-list-item
             button
             :ripple="false"
             nested
-            :open="openSideMenu === 'about'"
-            @toggle-nested="openSideMenu = arguments[0] ? 'about' : ''"
+            :open="openSideMenu === 'more'"
+            @toggle-nested="openSideMenu = arguments[0] ? 'more' : ''"
           >
             <mu-list-item-action>
               <mu-icon value=":el-icon-info" size="24"></mu-icon>
             </mu-list-item-action>
-            <mu-list-item-title>{{ $t('m.NavBar_About') }}</mu-list-item-title>
+            <mu-list-item-title>{{ $t('m.NavBar_More') }}</mu-list-item-title>
             <mu-list-item-action>
               <mu-icon
                 class="toggle-icon"
@@ -629,6 +632,19 @@
             >
               <mu-list-item-title>{{
                 $t('m.NavBar_Developer')
+              }}</mu-list-item-title>
+            </mu-list-item>
+            <mu-list-item
+              button
+              :ripple="false"
+              slot="nested"
+              to="/group"
+              class="nav-deprecated"
+              @click="opendrawer = !opendrawer"
+              active-class="mobile-menu-active"
+            >
+              <mu-list-item-title>{{
+                $t('m.NavBar_Group_Deprecated')
               }}</mu-list-item-title>
             </mu-list-item>
           </mu-list-item>
@@ -670,11 +686,24 @@ export default {
     window.onresize = () => {
       this.page_width();
       this.setHiddenHeaderHeight();
+      this.recomputeNavOverflow();
     };
   },
   mounted() {
     this.switchMode();
     this.setHiddenHeaderHeight();
+    this.$nextTick(() => {
+      this.recomputeNavOverflow();
+    });
+    // 字体（尤其图标字体）加载完成后重新测量一次，避免宽度变化导致溢出换行
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        this.remeasureNavOverflow();
+      });
+    }
+    this.navFontTimer = setTimeout(() => {
+      this.remeasureNavOverflow();
+    }, 1500);
     if (this.isAuthenticated) {
       this.getUnreadMsgCount();
       this.msgTimer = setInterval(() => {
@@ -692,6 +721,7 @@ export default {
     clearInterval(this.msgTimer);
     clearInterval(this.pkTimer);
     clearTimeout(this.fallbackTimer);
+    clearTimeout(this.navFontTimer);
   },
   data() {
     return {
@@ -708,7 +738,39 @@ export default {
       msgTimer: null,
       pkTimer: null,
       fallbackTimer: null,
+      navFontTimer: null,
+      correctingNav: false,
       notifiedInviteIds: [],
+      // 桌面端主导航（从左到右的顺序，越靠右越先被收进「更多」）
+      primaryNav: [
+        { key: 'home', type: 'item', index: '/home', icon: 'el-icon-s-home', i18n: 'm.NavBar_Home' },
+        { key: 'problem', type: 'item', index: '/problem', icon: 'el-icon-s-grid', i18n: 'm.NavBar_Problem' },
+        { key: 'training', type: 'item', index: '/training', icon: 'el-icon-s-claim', i18n: 'm.NavBar_Training' },
+        { key: 'contest', type: 'item', index: '/contest', icon: 'el-icon-trophy', i18n: 'm.NavBar_Contest' },
+        { key: 'status', type: 'item', index: '/status', icon: 'el-icon-s-marketing', i18n: 'm.NavBar_Status' },
+        {
+          key: 'rank',
+          type: 'submenu',
+          index: 'rank',
+          icon: 'el-icon-s-data',
+          i18n: 'm.NavBar_Rank',
+          children: [
+            { index: '/acm-rank', i18n: 'm.NavBar_ACM_Rank' },
+            { index: '/oi-rank', i18n: 'm.NavBar_OI_Rank' }
+          ]
+        },
+        { key: 'discussion', type: 'item', index: '/discussion', icon: 'el-icon-s-comment', i18n: 'm.NavBar_Discussion', condition: 'openPublicDiscussion' },
+        { key: 'assignment', type: 'item', index: '/assignment', icon: 'el-icon-notebook-2', i18n: 'm.NavBar_Assignment' },
+      ],
+      // 「更多」里固定展示的项（始终保留，收在最后）
+      moreFixed: [
+        { index: '/introduction', i18n: 'm.NavBar_Introduction' },
+        { index: '/developer', i18n: 'm.NavBar_Developer' },
+        { index: '/group', i18n: 'm.NavBar_Group_Deprecated', deprecated: true },
+      ],
+      // 主导航当前展示的数量（初始给个大值表示全部展示）
+      visibleCount: 99,
+      itemWidths: {},
     };
   },
   methods: {
@@ -720,6 +782,112 @@ export default {
       } else {
         this.mobileNar = false;
       }
+    },
+    // 右侧登录/注册按钮或用户下拉区域的最左边界（用于计算可用宽度）
+    getRightBlockLeft() {
+      let left = null;
+      const els = this.$el.querySelectorAll('.btn-menu, .drop-menu, .drop-avatar, .drop-msg');
+      for (const el of els) {
+        if (el.offsetParent === null) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) continue;
+        if (left === null || r.left < left) left = r.left;
+      }
+      return left;
+    },
+    // 取 ref 对应的真实 DOM 元素（v-for 里的动态 ref 是数组，需取第一项）
+    getRefEl(ref) {
+      if (ref == null) return null;
+      const r = Array.isArray(ref) ? ref[0] : ref;
+      return r && (r.$el || r);
+    },
+    measureNavWidths() {
+      const widths = {};
+      this.filteredPrimary.forEach((item) => {
+        const el = this.getRefEl(this.$refs['nav-' + item.key]);
+        widths[item.key] = el ? el.getBoundingClientRect().width : 0;
+      });
+      this.itemWidths = widths;
+    },
+    applyNavFit() {
+      if (this.mobileNar) return;
+      if (Object.keys(this.itemWidths).length === 0) return;
+      const logoEl = this.getRefEl(this.$refs.navLogo);
+      const moreEl = this.getRefEl(this.$refs['nav-more']);
+      const rightLeft = this.getRightBlockLeft();
+      if (!logoEl || !moreEl || rightLeft == null) return;
+      const logoRight = logoEl.getBoundingClientRect().right;
+      const moreWidth = moreEl.getBoundingClientRect().width;
+      const available = rightLeft - logoRight - moreWidth - 12;
+      let count = 0;
+      let used = 0;
+      for (const item of this.filteredPrimary) {
+        const w = this.itemWidths[item.key] || 0;
+        if (used + w <= available) {
+          used += w;
+          count++;
+        } else {
+          break;
+        }
+      }
+      this.visibleCount = count;
+      // 自纠：若右侧区域（铃铛/头像/下拉）仍被挤到下一行，就继续多收起一些 li
+      this.$nextTick(() => this.correctNavOverflow());
+    },
+    // 判断右侧登录/用户区域是否被挤到第二行
+    isRightBlockPushedDown() {
+      const menuEl = this.getRefEl(this.$refs.navMenu);
+      if (!menuEl) return false;
+      const menuTop = menuEl.getBoundingClientRect().top;
+      const els = this.$el.querySelectorAll('.btn-menu, .drop-menu, .drop-avatar, .drop-msg');
+      for (const el of els) {
+        if (el.offsetParent === null) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) continue;
+        if (r.top > menuTop + 40) return true;
+      }
+      return false;
+    },
+    correctNavOverflow() {
+      if (this.correctingNav) return;
+      if (this.mobileNar || this.visibleCount <= 0) return;
+      if (!this.isRightBlockPushedDown()) return;
+      this.correctingNav = true;
+      const step = () => {
+        if (this.mobileNar || this.visibleCount <= 0 || !this.isRightBlockPushedDown()) {
+          this.correctingNav = false;
+          return;
+        }
+        this.visibleCount--;
+        this.$nextTick(step);
+      };
+      step();
+    },
+    recomputeNavOverflow() {
+      if (this.mobileNar) {
+        this.visibleCount = this.filteredPrimary.length;
+        return;
+      }
+      // 首次测量：先把所有项渲染出来
+      if (Object.keys(this.itemWidths).length === 0) {
+        this.visibleCount = this.filteredPrimary.length;
+        this.$nextTick(() => {
+          if (this.mobileNar) return;
+          this.measureNavWidths();
+          this.applyNavFit();
+        });
+      } else {
+        this.applyNavFit();
+      }
+    },
+    remeasureNavOverflow() {
+      if (this.mobileNar) return;
+      this.visibleCount = this.filteredPrimary.length;
+      this.$nextTick(() => {
+        if (this.mobileNar) return;
+        this.measureNavWidths();
+        this.applyNavFit();
+      });
     },
     handleBtnClick(mode) {
       this.changeModalStatus({
@@ -962,6 +1130,20 @@ export default {
       }
       return '/' + this.$route.path.split('/')[1];
     },
+    filteredPrimary() {
+      return this.primaryNav.filter((item) => {
+        if (item.condition === 'openPublicDiscussion') {
+          return this.websiteConfig.openPublicDiscussion;
+        }
+        return true;
+      });
+    },
+    visiblePrimary() {
+      return this.filteredPrimary.slice(0, this.visibleCount);
+    },
+    overflowPrimary() {
+      return this.filteredPrimary.slice(this.visibleCount);
+    },
     modalVisible: {
       get() {
         return this.modalStatus.visible;
@@ -987,6 +1169,8 @@ export default {
   },
   watch: {
     isAuthenticated() {
+      // 登录态变化会切换右侧区域（登录按钮/用户下拉），需要重新计算可用宽度
+      this.$nextTick(() => this.recomputeNavOverflow());
       if (this.isAuthenticated) {
         if (this.msgTimer) {
           clearInterval(this.msgTimer);
@@ -1011,6 +1195,14 @@ export default {
         this.startPkPolling();
       }
     },
+    webLanguage() {
+      // 语言切换会改变菜单文案宽度，需要重新测量
+      this.remeasureNavOverflow();
+    },
+    'websiteConfig.openPublicDiscussion'() {
+      // 讨论区开关变化会影响菜单项数量，需要重新测量
+      this.remeasureNavOverflow();
+    },
     $route(){
       this.switchMode();
       // 路由切换时重置 contentReady，停止PK轮询，等新页面加载完再开
@@ -1034,7 +1226,8 @@ export default {
   position: fixed;
   top: 0;
   left: 0;
-  height: auto;
+  height: 61px;
+  overflow: hidden;
   width: 100%;
   z-index: 2000;
   background-color: #fff;
@@ -1163,5 +1356,20 @@ export default {
   margin-right: 5px !important;
   width: 24px !important;
   text-align: center !important;
+}
+/* 「团队」弃用项：划线 + 去掉悬停/选中变色反馈 */
+.nav-deprecated {
+  text-decoration: line-through;
+}
+.nav-deprecated .mu-list-item-title {
+  text-decoration: line-through;
+}
+.el-menu .el-menu-item.nav-deprecated,
+.el-menu .el-menu-item.nav-deprecated:hover,
+.el-menu .el-menu-item.nav-deprecated.is-active {
+  color: #909399 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border-bottom: 2px solid transparent !important;
 }
 </style>

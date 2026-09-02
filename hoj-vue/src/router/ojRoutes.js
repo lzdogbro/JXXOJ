@@ -43,6 +43,7 @@ import GroupDiscussionList from '@/views/oj/group/children/GroupDiscussionList.v
 import GroupMemberList from '@/views/oj/group/children/GroupMemberList.vue'
 import GroupSetting from '@/views/oj/group/children/GroupSetting.vue'
 import GroupRank from '@/views/oj/group/children/GroupRank.vue'
+import AssignmentList from '@/views/oj/assignment/AssignmentList.vue'
 import Chat from '@/views/oj/chat/Chat.vue'
 import PkPage from '@/views/oj/pk/PkPage.vue'
 import PkHistory from '@/views/oj/pk/PkHistory.vue'
@@ -410,6 +411,12 @@ const ojRoutes = [
         meta: { title: 'Group Rank' }
       },
     ]
+  },
+  {
+    path: '/assignment',
+    name: 'AssignmentList',
+    component: AssignmentList,
+    meta: { title: 'Assignment' }
   },
   {
     path: '/chat',
