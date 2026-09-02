@@ -513,6 +513,39 @@ const ojApi = {
   // ------------------------------------------------------------------------------------------------
 
 
+  // ------------------------------------作业模块的请求---------------------------------------------
+
+  // 获取布置给我的作业列表（分页）
+  getAssignmentList(currentPage, limit) {
+    return ajax('/api/get-assignment-list', 'get', {
+      params: { currentPage, limit }
+    })
+  },
+
+  // 获取单份作业 + 我的完成进度
+  getAssignmentDetail(aid) {
+    return ajax('/api/get-assignment-detail', 'get', {
+      params: { aid }
+    })
+  },
+
+  // 获取作业题目列表
+  getAssignmentProblemList(aid) {
+    return ajax('/api/get-assignment-problem-list', 'get', {
+      params: { aid }
+    })
+  },
+
+  // 获取作业题目详情
+  getAssignmentProblemDetail(aid, displayId) {
+    return ajax('/api/get-assignment-problem-detail', 'get', {
+      params: { aid, displayId }
+    })
+  },
+
+  // ------------------------------------------------------------------------------------------------
+
+
   // 比赛列表页的请求
   getContestList(currentPage, limit, query) {
     let params = {

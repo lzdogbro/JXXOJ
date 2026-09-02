@@ -25,4 +25,9 @@ public class AssignmentEntityServiceImpl extends ServiceImpl<AssignmentMapper, A
         Page<AssignmentVO> page = new Page<>(currentPage, limit);
         return assignmentMapper.getAssignmentList(page, keyword, creatorUid, status);
     }
+
+    @Override
+    public IPage<AssignmentVO> getMyAssignmentList(Page<AssignmentVO> page, String uid) {
+        return assignmentMapper.getMyAssignmentList(page, uid);
+    }
 }

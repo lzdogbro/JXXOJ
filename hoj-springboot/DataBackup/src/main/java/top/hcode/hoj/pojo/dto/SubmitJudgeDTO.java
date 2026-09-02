@@ -33,4 +33,6 @@ public class SubmitJudgeDTO {
 
     private Long pkId;
 
+    private Long aid;
+
 }

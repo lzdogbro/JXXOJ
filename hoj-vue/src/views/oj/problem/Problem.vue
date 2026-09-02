@@ -944,6 +944,7 @@ export default {
       groupID: null,
       problemID: "",
       trainingID: null,
+      aid: null,
       submitting: false,
       code: "",
       language: "",
@@ -1019,6 +1020,10 @@ export default {
     if(isFocusModePage && (this.$route.params.contestID || this.$route.params.trainingID)){
       this.contestID = this.$route.params.contestID;
       this.trainingID = this.$route.params.trainingID;
+      this.showProblemHorizontalMenu = true;
+    }
+    if (this.$route.name === "AssignmentFullProblemDetails") {
+      this.aid = this.$route.params.assignmentID;
       this.showProblemHorizontalMenu = true;
     }
   },
@@ -1354,13 +1359,20 @@ export default {
       if (this.$route.params.trainingID) {
         this.trainingID = this.$route.params.trainingID;
       }
+      if (this.$route.params.assignmentID) {
+        this.aid = this.$route.params.assignmentID;
+      }
+      let isAssignment = this.$route.name === "AssignmentFullProblemDetails";
       let func =
         this.$route.name === "ContestProblemDetails" ||
         this.$route.name === "ContestFullProblemDetails"
           ? "getContestProblem"
           : "getProblem";
       this.loading = true;
-      api[func](this.problemID, this.contestID, this.groupID, true).then(
+      let fetchPromise = isAssignment
+        ? api.getAssignmentProblemDetail(this.aid, this.problemID)
+        : api[func](this.problemID, this.contestID, this.groupID, true);
+      fetchPromise.then(
         (res) => {
           let result = res.data.data;
           this.changeDomTitle({ title: result.problem.title });
@@ -1685,6 +1697,7 @@ export default {
         cid: this.contestID,
         tid: this.trainingID,
         gid: this.groupID,
+        aid: this.aid,
         isRemote: this.isRemote,
       };
       if (this.captchaRequired) {

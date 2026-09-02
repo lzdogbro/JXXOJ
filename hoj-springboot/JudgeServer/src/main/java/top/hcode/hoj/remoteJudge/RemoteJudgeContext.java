@@ -45,6 +45,7 @@ public class RemoteJudgeContext {
                 .judgeId(toJudgeDTO.getJudge().getSubmitId())
                 .uid(toJudgeDTO.getJudge().getUid())
                 .cid(toJudgeDTO.getJudge().getCid())
+                .aid(toJudgeDTO.getJudge().getAid())
                 .pid(toJudgeDTO.getJudge().getPid())
                 .gid(toJudgeDTO.getJudge().getGid())
                 .username(toJudgeDTO.getUsername())

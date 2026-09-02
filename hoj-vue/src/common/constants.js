@@ -233,6 +233,11 @@ export const TRAINING_TYPE = {
   }
 }
 
+export const ASSIGNMENT_STATUS = {
+  DRAFT: 0,
+  PUBLISHED: 1
+}
+
 export const GROUP_TYPE = {
   PUBLIC: 1,
   PROTECTED: 2,

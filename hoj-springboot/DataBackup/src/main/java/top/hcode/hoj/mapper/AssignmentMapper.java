@@ -20,4 +20,6 @@ public interface AssignmentMapper extends BaseMapper<Assignment> {
                                           @Param("keyword") String keyword,
                                           @Param("creatorUid") String creatorUid,
                                           @Param("status") Integer status);
+
+    IPage<AssignmentVO> getMyAssignmentList(Page<AssignmentVO> page, @Param("uid") String uid);
 }
