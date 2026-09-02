@@ -10,6 +10,7 @@ import top.hcode.hoj.pojo.entity.assignment.Assignment;
 import top.hcode.hoj.pojo.vo.AssignmentVO;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 /**
  * 作业 EntityService 实现
@@ -29,5 +30,10 @@ public class AssignmentEntityServiceImpl extends ServiceImpl<AssignmentMapper, A
     @Override
     public IPage<AssignmentVO> getMyAssignmentList(Page<AssignmentVO> page, String uid) {
         return assignmentMapper.getMyAssignmentList(page, uid);
+    }
+
+    @Override
+    public List<AssignmentVO> getMyAssignmentUnfinishedList(String uid) {
+        return assignmentMapper.getMyAssignmentUnfinishedList(uid);
     }
 }

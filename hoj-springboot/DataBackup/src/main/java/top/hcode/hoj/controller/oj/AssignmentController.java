@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import top.hcode.hoj.common.result.CommonResult;
 import top.hcode.hoj.pojo.vo.AssignmentProblemVO;
+import top.hcode.hoj.pojo.vo.AssignmentUnfinishedVO;
 import top.hcode.hoj.pojo.vo.AssignmentVO;
 import top.hcode.hoj.pojo.vo.ProblemInfoVO;
 import top.hcode.hoj.service.oj.AssignmentService;
@@ -73,5 +74,15 @@ public class AssignmentController {
     public CommonResult<ProblemInfoVO> getAssignmentProblemDetails(@RequestParam(value = "aid") Long aid,
                                                                    @RequestParam(value = "displayId") String displayId) {
         return assignmentService.getAssignmentProblemDetails(aid, displayId);
+    }
+
+    /**
+     * @MethodName getAssignmentUnfinishedCount
+     * @Description 获取未完成统计（navbar 角标数字 + 是否闪烁）
+     */
+    @GetMapping("/get-assignment-unfinished-count")
+    @RequiresAuthentication
+    public CommonResult<AssignmentUnfinishedVO> getAssignmentUnfinishedCount() {
+        return assignmentService.getUnfinishedCount();
     }
 }

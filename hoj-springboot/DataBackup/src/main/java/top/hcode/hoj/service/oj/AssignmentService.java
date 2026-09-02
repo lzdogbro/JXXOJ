@@ -3,6 +3,7 @@ package top.hcode.hoj.service.oj;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import top.hcode.hoj.common.result.CommonResult;
 import top.hcode.hoj.pojo.vo.AssignmentProblemVO;
+import top.hcode.hoj.pojo.vo.AssignmentUnfinishedVO;
 import top.hcode.hoj.pojo.vo.AssignmentVO;
 import top.hcode.hoj.pojo.vo.ProblemInfoVO;
 
@@ -21,4 +22,6 @@ public interface AssignmentService {
     CommonResult<List<AssignmentProblemVO>> getAssignmentProblemList(Long aid);
 
     CommonResult<ProblemInfoVO> getAssignmentProblemDetails(Long aid, String displayId);
+
+    CommonResult<AssignmentUnfinishedVO> getUnfinishedCount();
 }

@@ -9,6 +9,8 @@ import org.springframework.stereotype.Repository;
 import top.hcode.hoj.pojo.entity.assignment.Assignment;
 import top.hcode.hoj.pojo.vo.AssignmentVO;
 
+import java.util.List;
+
 /**
  * 作业 Mapper
  */
@@ -22,4 +24,6 @@ public interface AssignmentMapper extends BaseMapper<Assignment> {
                                           @Param("status") Integer status);
 
     IPage<AssignmentVO> getMyAssignmentList(Page<AssignmentVO> page, @Param("uid") String uid);
+
+    List<AssignmentVO> getMyAssignmentUnfinishedList(@Param("uid") String uid);
 }

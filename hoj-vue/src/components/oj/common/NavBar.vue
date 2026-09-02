@@ -39,23 +39,42 @@
                 :key="item.key"
                 :index="item.index"
                 :ref="'nav-' + item.key"
+                :class="item.key === 'practice' && hasUnfinishedAssignment ? 'nav-assignment-flash' : ''"
               >
-                <template slot="title"
-                  ><i :class="item.icon"></i>{{ $t(item.i18n) }}</template
-                >
+                <template slot="title">
+                  <i :class="item.icon"></i>{{ $t(item.i18n) }}
+                  <span
+                    v-if="item.key === 'practice' && unfinishedBadgeCount > 0"
+                    class="nav-assignment-badge"
+                    >{{ unfinishedBadgeCount > 99 ? 99 : unfinishedBadgeCount }}</span
+                  >
+                </template>
                 <el-menu-item
                   v-for="c in item.children"
                   :key="c.index"
                   :index="c.index"
-                  >{{ $t(c.i18n) }}</el-menu-item
+                  :class="c.index === '/assignment' && hasUnfinishedAssignment ? 'nav-assignment-flash' : ''"
                 >
+                  {{ $t(c.i18n) }}
+                  <span
+                    v-if="c.index === '/assignment' && unfinishedBadgeCount > 0"
+                    class="nav-assignment-badge"
+                    >{{ unfinishedBadgeCount > 99 ? 99 : unfinishedBadgeCount }}</span
+                  >
+                </el-menu-item>
               </el-submenu>
             </template>
-            <el-submenu index="more" ref="nav-more">
-              <template slot="title"
-                ><i class="el-icon-more-outline"></i
-                >{{ $t('m.NavBar_More') }}</template
-              >
+            <el-submenu index="more" ref="nav-more"
+              :class="hasUnfinishedAssignment && assignmentParentOverflowed ? 'nav-assignment-flash' : ''"
+            >
+              <template slot="title">
+                <i class="el-icon-more-outline"></i>{{ $t('m.NavBar_More') }}
+                <span
+                  v-if="assignmentParentOverflowed && unfinishedBadgeCount > 0"
+                  class="nav-assignment-badge"
+                  >{{ unfinishedBadgeCount > 99 ? 99 : unfinishedBadgeCount }}</span
+                >
+              </template>
               <template v-for="item in overflowPrimary">
                 <el-menu-item
                   v-if="item.type === 'item'"
@@ -68,8 +87,15 @@
                     v-for="c in item.children"
                     :key="'oc-' + c.index"
                     :index="c.index"
-                    >{{ $t(c.i18n) }}</el-menu-item
+                    :class="c.index === '/assignment' && hasUnfinishedAssignment ? 'nav-assignment-flash' : ''"
                   >
+                    {{ $t(c.i18n) }}
+                    <span
+                      v-if="c.index === '/assignment' && unfinishedBadgeCount > 0"
+                      class="nav-assignment-badge"
+                      >{{ unfinishedBadgeCount > 99 ? 99 : unfinishedBadgeCount }}</span
+                    >
+                  </el-menu-item>
                 </template>
               </template>
               <el-menu-item
@@ -484,7 +510,10 @@
             <mu-list-item-action>
               <mu-icon value=":el-icon-s-claim" size="24"></mu-icon>
             </mu-list-item-action>
-            <mu-list-item-title>{{ $t('m.NavBar_Practice') }}</mu-list-item-title>
+            <mu-list-item-title :class="hasUnfinishedAssignment ? 'nav-assignment-flash' : ''">
+              {{ $t('m.NavBar_Practice') }}
+              <span v-if="unfinishedBadgeCount > 0" class="nav-assignment-badge">{{ unfinishedBadgeCount > 99 ? 99 : unfinishedBadgeCount }}</span>
+            </mu-list-item-title>
             <mu-list-item-action>
               <mu-icon
                 class="toggle-icon"
@@ -520,7 +549,10 @@
               @click="opendrawer = !opendrawer"
               active-class="mobile-menu-active"
             >
-              <mu-list-item-title>{{ $t('m.NavBar_Assignment') }}</mu-list-item-title>
+              <mu-list-item-title :class="hasUnfinishedAssignment ? 'nav-assignment-flash' : ''">
+                {{ $t('m.NavBar_Assignment') }}
+                <span v-if="unfinishedBadgeCount > 0" class="nav-assignment-badge">{{ unfinishedBadgeCount > 99 ? 99 : unfinishedBadgeCount }}</span>
+              </mu-list-item-title>
             </mu-list-item>
           </mu-list-item>
 
@@ -713,6 +745,7 @@ export default {
       this.msgTimer = setInterval(() => {
         this.getUnreadMsgCount();
       }, 120 * 1000);
+      this.startAssignmentPolling();
     }
     // 兜底：5秒后如果页面还没发 contentReady 信号，就启动PK轮询
     this.fallbackTimer = setTimeout(() => {
@@ -724,6 +757,7 @@ export default {
   beforeDestroy() {
     clearInterval(this.msgTimer);
     clearInterval(this.pkTimer);
+    clearInterval(this.assignmentTimer);
     clearTimeout(this.fallbackTimer);
     clearTimeout(this.navFontTimer);
   },
@@ -743,6 +777,7 @@ export default {
       pkTimer: null,
       fallbackTimer: null,
       navFontTimer: null,
+      assignmentTimer: null,
       correctingNav: false,
       problemKeyword: '',
       notifiedInviteIds: [],
@@ -991,6 +1026,15 @@ export default {
         this.checkActivePkMatch();
       }, 10 * 1000);
     },
+    startAssignmentPolling() {
+      if (this.assignmentTimer) {
+        return; // 已经在轮询中
+      }
+      this.$store.dispatch('getAssignmentUnfinishedCount').catch(() => {});
+      this.assignmentTimer = setInterval(() => {
+        this.$store.dispatch('getAssignmentUnfinishedCount').catch(() => {});
+      }, 60 * 1000);
+    },
     checkPkInvites() {
       api.getMyPkInvites().then((res) => {
         let invites = res.data.data;
@@ -1148,6 +1192,8 @@ export default {
       'websiteConfig',
       'unreadMessage',
       'webLanguage',
+      'unfinishedBadgeCount',
+      'unfinishedFlash',
     ]),
     avatar() {
       return this.$store.getters.userInfo.avatar;
@@ -1164,6 +1210,9 @@ export default {
     },
     hasUnreadChat() {
       return (this.unreadMessage && this.unreadMessage.chat > 0) || false;
+    },
+    hasUnfinishedAssignment() {
+      return this.unfinishedFlash;
     },
     activeMenuName() {
       if (this.$route.path.split('/')[1] == 'submission-detail') {
@@ -1188,6 +1237,9 @@ export default {
     },
     overflowPrimary() {
       return this.filteredPrimary.slice(this.visibleCount);
+    },
+    assignmentParentOverflowed() {
+      return this.overflowPrimary.some((item) => item.key === 'practice');
     },
     modalVisible: {
       get() {
@@ -1228,10 +1280,13 @@ export default {
         if (this.$store.state.user.contentReady) {
           this.startPkPolling();
         }
+        this.startAssignmentPolling();
       } else {
         clearInterval(this.msgTimer);
         clearInterval(this.pkTimer);
         this.pkTimer = null;
+        clearInterval(this.assignmentTimer);
+        this.assignmentTimer = null;
       }
     },
     '$store.state.user.contentReady'(val) {
@@ -1351,6 +1406,26 @@ export default {
 }
 .nav-msg-flash {
   animation: navMsgFlash 2.4s ease-in-out infinite;
+}
+/* 有必做未完成作业时，导航栏「练习/作业」低频闪烁 */
+.nav-assignment-flash {
+  animation: navMsgFlash 2.4s ease-in-out infinite;
+}
+/* 「练习」按钮的未完成角标（模仿私聊角标的红底白字圆角） */
+.nav-assignment-badge {
+  display: inline-block;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: red;
+  color: #fff;
+  font-size: 12px;
+  text-align: center;
+  margin-left: 4px;
+  vertical-align: 1px;
+  box-sizing: border-box;
 }
 /* 右侧私聊图标 */
 .nav-chat {

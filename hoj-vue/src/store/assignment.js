@@ -4,9 +4,13 @@ const state = {
   assignmentList: [],
   currentAssignment: {},
   assignmentProblemList: [],
+  unfinishedBadgeCount: 0,
+  unfinishedFlash: false,
 }
 
 const getters = {
+  unfinishedBadgeCount: (state) => state.unfinishedBadgeCount,
+  unfinishedFlash: (state) => state.unfinishedFlash,
 }
 
 const mutations = {
@@ -19,10 +23,16 @@ const mutations = {
   changeAssignmentProblemList (state, payload) {
     state.assignmentProblemList = payload.assignmentProblemList
   },
+  changeUnfinished (state, payload) {
+    state.unfinishedBadgeCount = payload.badgeCount
+    state.unfinishedFlash = payload.flash
+  },
   clearAssignment (state) {
     state.assignmentList = []
     state.currentAssignment = {}
     state.assignmentProblemList = []
+    state.unfinishedBadgeCount = 0
+    state.unfinishedFlash = false
   }
 }
 
@@ -57,6 +67,21 @@ const actions = {
         resolve(res)
       }, (err) => {
         commit('changeAssignmentProblemList', { assignmentProblemList: [] })
+        reject(err)
+      })
+    })
+  },
+  getAssignmentUnfinishedCount ({ commit }) {
+    return new Promise((resolve, reject) => {
+      api.getAssignmentUnfinishedCount().then((res) => {
+        const data = res.data.data || {}
+        commit('changeUnfinished', {
+          badgeCount: data.badgeCount || 0,
+          flash: !!data.flash
+        })
+        resolve(res)
+      }, (err) => {
+        commit('changeUnfinished', { badgeCount: 0, flash: false })
         reject(err)
       })
     })

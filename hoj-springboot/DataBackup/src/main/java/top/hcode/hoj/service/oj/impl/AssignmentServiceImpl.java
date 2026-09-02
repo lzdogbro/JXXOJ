@@ -8,6 +8,7 @@ import top.hcode.hoj.common.result.CommonResult;
 import top.hcode.hoj.common.result.ResultStatus;
 import top.hcode.hoj.manager.oj.AssignmentManager;
 import top.hcode.hoj.pojo.vo.AssignmentProblemVO;
+import top.hcode.hoj.pojo.vo.AssignmentUnfinishedVO;
 import top.hcode.hoj.pojo.vo.AssignmentVO;
 import top.hcode.hoj.pojo.vo.ProblemInfoVO;
 import top.hcode.hoj.service.oj.AssignmentService;
@@ -61,5 +62,10 @@ public class AssignmentServiceImpl implements AssignmentService {
         } catch (StatusForbiddenException e) {
             return CommonResult.errorResponse(e.getMessage(), ResultStatus.FORBIDDEN);
         }
+    }
+
+    @Override
+    public CommonResult<AssignmentUnfinishedVO> getUnfinishedCount() {
+        return CommonResult.successResponse(assignmentManager.getUnfinishedCount());
     }
 }

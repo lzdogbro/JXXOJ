@@ -77,4 +77,16 @@
                  (a.is_required = 1 AND s.status != 1) DESC,
                  a.id DESC
     </select>
+
+    <select id="getMyAssignmentUnfinishedList" resultMap="map_MyAssignmentList">
+        SELECT a.id, a.is_required, a.end_time,
+               COALESCE(pc.problem_count, 0) AS problem_count,
+               COALESCE(s.accepted_count, 0) AS accepted_count
+        FROM assignment_student s
+        INNER JOIN assignment a ON s.aid = a.id AND a.is_deleted = 0
+        LEFT JOIN (
+            SELECT aid, COUNT(*) AS problem_count FROM assignment_problem GROUP BY aid
+        ) pc ON pc.aid = a.id
+        WHERE s.uid = #{uid}
+    </select>
 </mapper>

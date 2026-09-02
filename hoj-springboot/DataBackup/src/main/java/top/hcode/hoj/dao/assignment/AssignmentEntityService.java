@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import top.hcode.hoj.pojo.entity.assignment.Assignment;
 import top.hcode.hoj.pojo.vo.AssignmentVO;
 
+import java.util.List;
+
 /**
  * 作业 EntityService
  */
@@ -14,4 +16,6 @@ public interface AssignmentEntityService extends IService<Assignment> {
     IPage<AssignmentVO> getAssignmentList(int limit, int currentPage, String keyword, String creatorUid, Integer status);
 
     IPage<AssignmentVO> getMyAssignmentList(Page<AssignmentVO> page, String uid);
+
+    List<AssignmentVO> getMyAssignmentUnfinishedList(String uid);
 }

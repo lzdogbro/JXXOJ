@@ -543,6 +543,11 @@ const ojApi = {
     })
   },
 
+  // 获取必做未完成作业数量（navbar 闪烁用）
+  getAssignmentUnfinishedCount() {
+    return ajax('/api/get-assignment-unfinished-count', 'get')
+  },
+
   // ------------------------------------------------------------------------------------------------
 
 

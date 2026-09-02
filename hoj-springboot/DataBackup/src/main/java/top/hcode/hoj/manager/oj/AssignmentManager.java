@@ -31,6 +31,7 @@ import top.hcode.hoj.pojo.entity.problem.ProblemTag;
 import top.hcode.hoj.pojo.entity.problem.Tag;
 import top.hcode.hoj.pojo.entity.user.UserInfo;
 import top.hcode.hoj.pojo.vo.AssignmentProblemVO;
+import top.hcode.hoj.pojo.vo.AssignmentUnfinishedVO;
 import top.hcode.hoj.pojo.vo.AssignmentVO;
 import top.hcode.hoj.pojo.vo.ProblemCountVO;
 import top.hcode.hoj.pojo.vo.ProblemInfoVO;
@@ -221,6 +222,42 @@ public class AssignmentManager {
         problem.setJudgeExtraFile(null).setSpjCode(null).setSpjLanguage(null);
 
         return new ProblemInfoVO(problem, tags, languagesStr, problemCount, langNameAndCode);
+    }
+
+    /**
+     * 当前学生的未完成统计（navbar 角标 + 闪烁用）
+     *
+     * badgeCount：截止前未完成的必做题目数（角标数字）
+     * flash：必做未完成（任意截止）或选做未完成（未截止）时继续闪烁
+     */
+    public AssignmentUnfinishedVO getUnfinishedCount() {
+        AccountProfile userRolesVo = (AccountProfile) SecurityUtils.getSubject().getPrincipal();
+        String uid = userRolesVo.getUid();
+        List<AssignmentVO> list = assignmentEntityService.getMyAssignmentUnfinishedList(uid);
+
+        Date now = new Date();
+        int badgeCount = 0;
+        boolean flash = false;
+        for (AssignmentVO vo : list) {
+            int total = vo.getProblemCount() == null ? 0 : vo.getProblemCount();
+            int accepted = vo.getAcceptedCount() == null ? 0 : vo.getAcceptedCount();
+            if (accepted >= total) {
+                continue; // 已全部完成
+            }
+            boolean required = vo.getIsRequired() != null && vo.getIsRequired() == 1;
+            boolean beforeDeadline = vo.getEndTime() == null || now.before(vo.getEndTime());
+            if (required) {
+                flash = true;
+                if (beforeDeadline) {
+                    badgeCount += (total - accepted);
+                }
+            } else if (beforeDeadline) {
+                flash = true;
+            }
+        }
+        return new AssignmentUnfinishedVO()
+                .setBadgeCount(badgeCount)
+                .setFlash(flash);
     }
 
     private Assignment checkAndGetAssignment(Long aid) throws StatusNotFoundException, StatusForbiddenException {
