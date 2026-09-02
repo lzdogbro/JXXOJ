@@ -157,8 +157,15 @@ export default {
       this.messages = [];
       this.currentPage = 1;
       this.inputMsg = '';
+      const unreadCount = contact.unreadCount || 0;
       contact.unreadCount = 0;
-      this.loadMessages();
+      // 等消息加载完成（后端会将该联系人消息置为已读）后再扣未读数，
+      // 这样导航栏重新拉取发送者时能拿到最新的未读联系人，而非刚被读掉的那个
+      this.loadMessages().then(() => {
+        if (unreadCount > 0) {
+          this.$store.dispatch('substractUnreadMessageCount', { name: 'chat', num: unreadCount });
+        }
+      });
     },
     checkRouteContact() {
       let targetUid = this.$route.query.uid;
@@ -183,9 +190,9 @@ export default {
       }
     },
     loadMessages() {
-      if (!this.activeContact) return;
+      if (!this.activeContact) return Promise.resolve();
       this.loadingMsg = true;
-      api.getChatMessages(this.activeContact.uid, 20, this.currentPage).then((res) => {
+      return api.getChatMessages(this.activeContact.uid, 20, this.currentPage).then((res) => {
         let data = res.data.data;
         let newMsgs = data.records || [];
         newMsgs.reverse();
@@ -252,7 +259,9 @@ export default {
       });
     },
     handleKeydown(e) {
-      if (e.ctrlKey && e.keyCode === 13) {
+      // 回车直接发送，Shift+回车换行；输入法组词（isComposing）时回车不发送
+      if (e.keyCode === 13 && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
         this.sendMessage();
       }
     },
@@ -470,6 +479,7 @@ export default {
   font-size: 14px;
   line-height: 1.5;
   word-break: break-word;
+  white-space: pre-wrap;
 }
 .bubble-other {
   background: #fff;

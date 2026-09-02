@@ -31,8 +31,21 @@
                 :key="item.key"
                 :index="item.index"
                 :ref="'nav-' + item.key"
-                ><i :class="item.icon"></i>{{ $t(item.i18n) }}</el-menu-item
+                :class="[item.key === 'chat' && hasUnreadChat ? 'nav-chat-flash' : '', item.key === 'chat' ? 'nav-chat-item' : '']"
               >
+                <template v-if="item.key === 'chat'">
+                  <template v-if="chatShowSender">
+                    {{ chatDisplayText }}
+                  </template>
+                  <template v-else>
+                    <i class="el-icon-chat-dot-round"></i
+                    >{{ $t('m.NavBar_Chat') }}
+                  </template>
+                </template>
+                <template v-else
+                  ><i :class="item.icon"></i>{{ $t(item.i18n) }}</template
+                >
+              </el-menu-item>
               <el-submenu
                 v-else
                 :key="item.key"
@@ -60,7 +73,7 @@
                   v-if="item.type === 'item'"
                   :key="'o-' + item.key"
                   :index="item.index"
-                  >{{ $t(item.i18n) }}</el-menu-item
+                  >{{ item.key === 'chat' ? chatDisplayText : $t(item.i18n) }}</el-menu-item
                 >
                 <template v-else>
                   <el-menu-item
@@ -191,21 +204,14 @@
               class="drop-avatar"
             ></avatar>
             <el-dropdown
-              class="drop-msg"
+              :class="['drop-msg', hasUnreadMessage ? 'nav-msg-flash' : '']"
               @command="handleRoute"
               placement="bottom"
             >
               <span class="el-dropdown-link">
                 <i class="el-icon-message-solid"></i>
                 <svg
-                  v-if="
-                    unreadMessage.comment > 0 ||
-                      unreadMessage.reply > 0 ||
-                      unreadMessage.like > 0 ||
-                      unreadMessage.sys > 0 ||
-                      unreadMessage.mine > 0 ||
-                      unreadMessage.chat > 0
-                  "
+                  v-if="hasUnreadMessage"
                   width="10"
                   height="10"
                   style="vertical-align: top;margin-left: -11px;margin-top: 3px;"
@@ -243,12 +249,6 @@
                   <span>{{ $t('m.MineMsg') }}</span>
                   <span class="drop-msg-count" v-if="unreadMessage.mine > 0">
                     <MsgSvg :total="unreadMessage.mine"></MsgSvg>
-                  </span>
-                </el-dropdown-item>
-                <el-dropdown-item command="/chat" divided>
-                  <span>{{ $t('m.NavBar_Chat') }}</span>
-                  <span class="drop-msg-count" v-if="unreadMessage.chat > 0">
-                    <MsgSvg :total="unreadMessage.chat"></MsgSvg>
                   </span>
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -293,16 +293,9 @@
 
         <mu-menu slot="right" v-show="isAuthenticated" :open.sync="openmsgmenu">
           <mu-button flat>
-            <mu-icon value=":el-icon-message-solid" size="24"></mu-icon>
+            <mu-icon :class="hasUnreadMessage ? 'nav-msg-flash' : ''" value=":el-icon-message-solid" size="24"></mu-icon>
             <svg
-              v-if="
-                unreadMessage.comment > 0 ||
-                  unreadMessage.reply > 0 ||
-                  unreadMessage.like > 0 ||
-                  unreadMessage.sys > 0 ||
-                  unreadMessage.mine > 0 ||
-                  unreadMessage.chat > 0
-              "
+              v-if="hasUnreadMessage"
               width="10"
               height="10"
               style="margin-left: -11px;margin-top: -13px;"
@@ -362,17 +355,6 @@
                   {{ $t('m.MineMsg') }}
                   <span class="drop-msg-count" v-if="unreadMessage.mine > 0">
                     <MsgSvg :total="unreadMessage.mine"></MsgSvg>
-                  </span>
-                </mu-list-item-title>
-              </mu-list-item-content>
-            </mu-list-item>
-            <mu-divider></mu-divider>
-            <mu-list-item button value="/chat">
-              <mu-list-item-content>
-                <mu-list-item-title>
-                  {{ $t('m.NavBar_Chat') }}
-                  <span class="drop-msg-count" v-if="unreadMessage.chat > 0">
-                    <MsgSvg :total="unreadMessage.chat"></MsgSvg>
                   </span>
                 </mu-list-item-title>
               </mu-list-item-content>
@@ -594,6 +576,19 @@
 
           <mu-list-item
             button
+            to="/chat"
+            :class="hasUnreadChat ? 'nav-chat-flash' : ''"
+            @click="opendrawer = !opendrawer"
+            active-class="mobile-menu-active"
+          >
+            <mu-list-item-action v-show="!chatShowSender">
+              <mu-icon value=":el-icon-chat-dot-round" size="24"></mu-icon>
+            </mu-list-item-action>
+            <mu-list-item-title>{{ chatDisplayText }}</mu-list-item-title>
+          </mu-list-item>
+
+          <mu-list-item
+            button
             :ripple="false"
             nested
             :open="openSideMenu === 'more'"
@@ -722,6 +717,7 @@ export default {
     clearInterval(this.pkTimer);
     clearTimeout(this.fallbackTimer);
     clearTimeout(this.navFontTimer);
+    this.stopChatAlternate();
   },
   data() {
     return {
@@ -740,12 +736,24 @@ export default {
       fallbackTimer: null,
       navFontTimer: null,
       correctingNav: false,
+      chatSender: '',
+      chatShowSender: false,
+      chatAlternateTimer: null,
       notifiedInviteIds: [],
       // 桌面端主导航（从左到右的顺序，越靠右越先被收进「更多」）
       primaryNav: [
         { key: 'home', type: 'item', index: '/home', icon: 'el-icon-s-home', i18n: 'm.NavBar_Home' },
-        { key: 'problem', type: 'item', index: '/problem', icon: 'el-icon-s-grid', i18n: 'm.NavBar_Problem' },
-        { key: 'training', type: 'item', index: '/training', icon: 'el-icon-s-claim', i18n: 'm.NavBar_Training' },
+        {
+          key: 'practice',
+          type: 'submenu',
+          index: 'practice',
+          icon: 'el-icon-s-claim',
+          i18n: 'm.NavBar_Practice',
+          children: [
+            { index: '/problem', i18n: 'm.NavBar_Problem' },
+            { index: '/training', i18n: 'm.NavBar_Training' }
+          ]
+        },
         { key: 'contest', type: 'item', index: '/contest', icon: 'el-icon-trophy', i18n: 'm.NavBar_Contest' },
         { key: 'status', type: 'item', index: '/status', icon: 'el-icon-s-marketing', i18n: 'm.NavBar_Status' },
         {
@@ -761,6 +769,7 @@ export default {
         },
         { key: 'discussion', type: 'item', index: '/discussion', icon: 'el-icon-s-comment', i18n: 'm.NavBar_Discussion', condition: 'openPublicDiscussion' },
         { key: 'assignment', type: 'item', index: '/assignment', icon: 'el-icon-notebook-2', i18n: 'm.NavBar_Assignment' },
+        { key: 'chat', type: 'item', index: '/chat', icon: 'el-icon-chat-dot-round', i18n: 'm.NavBar_Chat' },
       ],
       // 「更多」里固定展示的项（始终保留，收在最后）
       moreFixed: [
@@ -782,6 +791,33 @@ export default {
       } else {
         this.mobileNar = false;
       }
+    },
+    fetchChatSender() {
+      api.getChatContacts().then((res) => {
+        const contacts = res.data.data || [];
+        const unread = contacts.find((c) => c.unreadCount > 0);
+        if (unread) {
+          this.chatSender = unread.username || unread.nickname || '';
+        }
+      }).catch(() => {});
+    },
+    startChatAlternate() {
+      if (this.chatAlternateTimer) return;
+      this.chatShowSender = false;
+      // 熄灭后第 0.2s（即灭到最暗 0.2s + 0.2s）切成用户名，此后每 2.4s 交替
+      this.chatAlternateTimer = setTimeout(() => {
+        this.chatShowSender = true;
+        this.chatAlternateTimer = setInterval(() => {
+          this.chatShowSender = !this.chatShowSender;
+        }, 2400);
+      }, 400);
+    },
+    stopChatAlternate() {
+      if (this.chatAlternateTimer) {
+        clearInterval(this.chatAlternateTimer);
+        this.chatAlternateTimer = null;
+      }
+      this.chatShowSender = false;
     },
     // 右侧登录/注册按钮或用户下拉区域的最左边界（用于计算可用宽度）
     getRightBlockLeft() {
@@ -914,6 +950,7 @@ export default {
       }
     },
     getUnreadMsgCount() {
+      this.fetchChatSender();
       api.getUnreadMsgCount().then((res) => {
         let data = res.data.data;
         this.$store.dispatch('updateUnreadMessageCount', data);
@@ -947,6 +984,16 @@ export default {
           }
         }
       });
+    },
+    refreshChatUnread() {
+      if (!this.isAuthenticated) return;
+      api.getChatUnreadCount().then((res) => {
+        const count = res.data.data || 0;
+        this.$store.dispatch('updateUnreadMessageCount', {
+          ...this.unreadMessage,
+          chat: count,
+        });
+      }).catch(() => {});
     },
     startPkPolling() {
       if (this.pkTimer) {
@@ -1120,6 +1167,25 @@ export default {
     avatar() {
       return this.$store.getters.userInfo.avatar;
     },
+    hasUnreadMessage() {
+      const m = this.unreadMessage || {};
+      return (
+        m.comment > 0 ||
+        m.reply > 0 ||
+        m.like > 0 ||
+        m.sys > 0 ||
+        m.mine > 0
+      );
+    },
+    hasUnreadChat() {
+      return (this.unreadMessage && this.unreadMessage.chat > 0) || false;
+    },
+    chatDisplayText() {
+      if (this.hasUnreadChat && this.chatShowSender && this.chatSender) {
+        return this.chatSender;
+      }
+      return this.$t('m.NavBar_Chat');
+    },
     activeMenuName() {
       if (this.$route.path.split('/')[1] == 'submission-detail') {
         return '/status';
@@ -1187,6 +1253,7 @@ export default {
         clearInterval(this.msgTimer);
         clearInterval(this.pkTimer);
         this.pkTimer = null;
+        this.stopChatAlternate();
       }
     },
     '$store.state.user.contentReady'(val) {
@@ -1203,8 +1270,21 @@ export default {
       // 讨论区开关变化会影响菜单项数量，需要重新测量
       this.remeasureNavOverflow();
     },
-    $route(){
+    'unreadMessage.chat'(newCount) {
+      if (newCount > 0 && this.isAuthenticated) {
+        // 未读数变化（新增/清零/换人）时，重新拉取最新未读发送者并保持闪动
+        this.fetchChatSender();
+        this.startChatAlternate();
+      } else {
+        this.stopChatAlternate();
+      }
+    },
+    $route(to, from){
       this.switchMode();
+      // 离开私聊页面时刷新本地未读计数（后端在读消息时已置为已读），否则未读残留会一直闪动
+      if (from && from.path && from.path.split('/')[1] === 'chat' && to.path.split('/')[1] !== 'chat') {
+        this.refreshChatUnread();
+      }
       // 路由切换时重置 contentReady，停止PK轮询，等新页面加载完再开
       this.$store.commit('setContentReady', false);
       clearInterval(this.pkTimer);
@@ -1292,6 +1372,31 @@ export default {
 }
 .drop-msg-count {
   margin-left: 2px;
+}
+/* 有新消息时，消息图标低频闪烁 */
+@keyframes navMsgFlash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.nav-msg-flash {
+  animation: navMsgFlash 2.4s ease-in-out infinite;
+}
+/* 私聊闪烁：灭了后保持 0.4s 再亮（0.2s 灭到最暗，0.4s 保持，0.2s 亮回） */
+@keyframes navChatFlash {
+  0%, 100% { opacity: 1; }
+  8.33% { opacity: 0; }
+  25% { opacity: 0; }
+  33.33% { opacity: 1; }
+}
+.nav-chat-flash {
+  animation: navChatFlash 2.4s ease-in-out infinite;
+}
+.nav-chat-item {
+  width: 83px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .btn-menu {
   font-size: 16px;

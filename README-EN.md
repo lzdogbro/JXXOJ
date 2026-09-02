@@ -286,18 +286,18 @@ Modern browsers (Chrome, Firefox) and Internet Explorer 10+. Mobile browsers are
 
 ### 13. Private Chat (NEW 🆕)
 
-![Private Chat](image.png)
+![Private Chat](images/chat.png)
 
 ### 14. PK Battle (NEW 🆕)
 
 > PK Battle page: Split-screen layout (problem + editor), with player info and countdown at top
 
-![Jump to PK from problem page](image-2.png)
-![PK Battle page](image-3.png)
+![Jump to PK from problem page](images/pk-invite.png)
+![PK Battle page](images/pk-battle.png)
 
 > PK Match History: View all past battles with opponent info, results, and score changes
 
-![PK History](image-1.png)
+![PK History](images/pk-history.png)
 
 ## Support & Contribution
 
