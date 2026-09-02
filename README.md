@@ -38,7 +38,7 @@ HOJ 是一个基于 Vue 和 Spring Boot、Spring Cloud Alibaba 构建的**前后
 - **💬 私聊系统**：用户间一对一私信交流，联系人列表，未读消息提醒
 - **📚 题单系统**：训练模块重构为「题单」，支持公开/私有题单、密码访问、分类管理与搜索
 - **📝 论坛系统**：讨论区重构为「论坛」，引入帖子概念，帖子可关联题目，支持点赞、举报与后台管理
-- **🎓 作业功能**：导航新增「作业」入口（课程作业，开发中）
+- **🎓 作业功能**：课程作业的发布与提交，支持学生组管理、时间窗约束、AC 制完成判定
 - **🚀 一键部署脚本**：自定义 `deploy.sh`，支持构建 → 打包 → 部署全流程自动化
 - **🌐 多语言扩展**：新增繁体中文（zh-TW）、日语（ja-JP）、韩语（ko-KR）国际化支持
 - **🐳 CDN 迁移**：静态资源 CDN 迁移至 Cloudflare / jsdelivr，提升国内访问速度
@@ -106,6 +106,9 @@ HOJ 是一个基于 Vue 和 Spring Boot、Spring Cloud Alibaba 构建的**前后
 
 # 5. 停止旧容器 + 重新构建镜像 + 启动
 #    docker-compose down && docker-compose up -d --build
+#    启动后自动执行：
+#    - 数据库增量迁移（hoj-pk-chat-update.sql + hoj-assignment-update.sql）
+#    - JudgeServer JAR 热替换（本地构建的判题 jar → 容器 /judge/server/app.jar 并重启）
 ./deploy.sh deploy
 ```
 
@@ -122,8 +125,9 @@ HOJ 是一个基于 Vue 和 Spring Boot、Spring Cloud Alibaba 构建的**前后
 **环境变量**（可选配置）：
 
 ```bash
-export MYHOJ_DEPLOY_DIR=/path/to/myhoj-deploy  # 部署目录路径（默认: ../myhoj-deploy）
-export BACKEND_JAR_NAME=hoj-backend-4.6.jar    # 后端 JAR 文件名
+export MYHOJ_DEPLOY_DIR=/path/to/myhoj-deploy        # 部署目录路径（默认: ../myhoj-deploy）
+export BACKEND_JAR_NAME=hoj-backend-4.6.jar          # 后端 JAR 文件名
+export JUDGE_SERVER_JAR_NAME=hoj-judgeServer-4.6.jar # 判题 JAR 文件名
 ```
 
 ### 方式二：基于原生 hoj-deploy 部署
@@ -177,11 +181,19 @@ export BACKEND_JAR_NAME=hoj-backend-4.6.jar    # 后端 JAR 文件名
 - **内容治理**：帖子举报、后台论坛管理（查看 / 删除）
 - **灵活开关**：后台可配置是否开启比赛论坛区
 
-### 作业功能（开发中）
+### 作业功能
 
-导航栏新增「作业」入口（路由 `/assignment`），用于课程作业的发布与提交。当前为占位页面，功能持续开发中。
+导航栏新增「作业」入口（路由 `/assignment`），用于课程作业的发布与提交。已完成学生端前后端与提交判定链路，管理端目前提供后端 API（前端管理界面待后续阶段）。
 
-> 📌 **提示**：升级到包含 PK 和私聊功能的版本需要执行 SQL 变更（新增 `pk_match` 和 `private_chat` 表，以及 `user_record` 表的 `pk_score` 字段），详见 `sqlAndsetting/hoj.sql`。
+- **学生端**：作业列表、作业详情（标题、必做/选做、起止时间、进度条）、作业题目列表（每题 AC 状态）、作业内提交
+- **完成判定**：AC 制——作业内题目通过评测即计为完成，完成快照在作业发布时定格，不随后续提交回写
+- **时间窗**：起止时间动态推导（未开始 / 进行中 / 已结束），不引入定时任务
+- **管理端（后端 API）**：学生组管理（增删改查、添加/移除成员）、作业管理（增删改查、发布、延期）
+- **权限隔离**：root 全局可见、admin 仅见自己创建的作业、problem_admin 只读
+
+> 📌 **待做**：阶段 3 导航闪烁通知（未完成数轮询）、阶段 4 微信接口与家长绑定（详见 `docs/作业功能设计.md`）。
+
+> 📌 **提示**：升级到包含 PK、私聊、作业功能的版本需要执行数据库增量脚本 `sqlAndsetting/hoj-pk-chat-update.sql`（PK 对战 + 私聊）与 `sqlAndsetting/hoj-assignment-update.sql`（作业功能，新增 7 张表 + judge 表 aid 列）。使用 `deploy.sh` 部署时会自动应用；手动升级请自行按顺序执行。
 
 ---
 
@@ -253,6 +265,7 @@ HOJ/
 | 2026-06-10 | **新增私聊功能**：用户间一对一私信交流，联系人列表，未读消息提醒       |  lzdogbro   |
 | 2026-06-18 | **新增 PK 对战功能**：1v1 实时编程对战，限时 20 分钟，积分排名系统   |  lzdogbro   |
 | 2026-09-02 | **题单/论坛重构**：训练改名题单（公开/私有、密码、分类），讨论区改名论坛（帖子、关联题目、举报），导航新增作业入口，私聊未读闪动优化 |  lzdogbro   |
+| 2026-09-03 | **作业功能**：学生组管理、作业发布/提交链路、AC 制完成判定（学生端前后端 + 管理端后端 API）；deploy.sh 支持多数据库迁移与 JudgeServer 热替换 |  lzdogbro   |
 
 ---
 
