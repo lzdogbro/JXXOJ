@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.hcode.hoj.mapper.StudentGroupUserMapper">
+
+    <resultMap id="map_GroupUserList" type="top.hcode.hoj.pojo.vo.StudentGroupUserVO">
+        <id column="uid" property="uid"></id>
+        <result column="username" property="username"></result>
+        <result column="realname" property="realname"></result>
+        <result column="nickname" property="nickname"></result>
+        <result column="number" property="number"></result>
+        <result column="gmt_create" property="gmtCreate"></result>
+    </resultMap>
+
+    <select id="getGroupUserList" resultMap="map_GroupUserList">
+        SELECT gu.uid, u.username, u.realname, u.nickname, u.number, gu.gmt_create
+        FROM student_group_user gu
+        LEFT JOIN user_info u ON gu.uid = u.uuid
+        WHERE gu.gid = #{gid}
+        ORDER BY gu.gmt_create ASC
+    </select>
+</mapper>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.hcode.hoj.mapper.AssignmentStudentMapper">
+
+    <resultMap id="map_AssignmentStudentList" type="top.hcode.hoj.pojo.vo.AssignmentStudentVO">
+        <id column="uid" property="uid"></id>
+        <result column="username" property="username"></result>
+        <result column="realname" property="realname"></result>
+        <result column="accepted_count" property="acceptedCount"></result>
+        <result column="status" property="status"></result>
+        <result column="score" property="score"></result>
+        <result column="gmt_finish" property="gmtFinish"></result>
+    </resultMap>
+
+    <select id="getAssignmentStudentList" resultMap="map_AssignmentStudentList">
+        SELECT s.uid, u.username, u.realname, s.accepted_count, s.status, s.score, s.gmt_finish
+        FROM assignment_student s
+        LEFT JOIN user_info u ON s.uid = u.uuid
+        WHERE s.aid = #{aid}
+        ORDER BY s.gmt_create ASC
+    </select>
+</mapper>
