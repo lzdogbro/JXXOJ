@@ -246,9 +246,10 @@
               :title="$t('m.NavBar_Chat')"
               @click="goChat"
             >
-              <el-badge :value="unreadMessage.chat" :hidden="!hasUnreadChat" :max="99">
-                <i class="el-icon-chat-dot-round"></i>
-              </el-badge>
+              <i class="el-icon-chat-dot-round"></i>
+              <span v-if="hasUnreadChat" class="nav-chat-badge">
+                <MsgSvg :total="unreadMessage.chat"></MsgSvg>
+              </span>
             </div>
           </template>
           <div class="nav-search">
@@ -1318,7 +1319,7 @@ export default {
 }
 .drop-menu {
   float: right;
-  margin-right: 30px;
+  margin-right: 18px;
   position: relative;
   font-weight: 500;
   right: 10px;
@@ -1334,9 +1335,11 @@ export default {
 .drop-msg {
   float: right;
   font-size: 25px;
-  margin-right: 10px;
+  height: 30px;
+  line-height: 30px;
+  margin-right: 15px;
   position: relative;
-  margin-top: 13px;
+  margin-top: 15px;
 }
 .drop-msg-count {
   margin-left: 2px;
@@ -1353,30 +1356,34 @@ export default {
 .nav-chat {
   float: right;
   font-size: 25px;
-  margin-right: 16px;
+  height: 30px;
+  line-height: 30px;
+  margin-left: 8px;
+  margin-right: 10px;
   position: relative;
-  margin-top: 13px;
+  margin-top: 15px;
   cursor: pointer;
   color: #495060;
 }
 .nav-chat:hover {
   color: #2E95FB;
 }
-.nav-chat .el-badge__content {
-  top: 2px;
-  right: 4px;
+.nav-chat-badge {
+  position: absolute;
+  top: -6px;
+  right: -16px;
 }
 /* 右侧题号搜索框 */
 .nav-search {
   float: right;
   width: 180px;
-  margin-top: 13px;
+  margin-top: 16px;
   margin-right: 10px;
 }
 .btn-menu {
   font-size: 16px;
   float: right;
-  margin-right: 10px;
+  margin-right: 6px;
   margin-top: 12px;
 }
 /deep/ .el-dialog {
