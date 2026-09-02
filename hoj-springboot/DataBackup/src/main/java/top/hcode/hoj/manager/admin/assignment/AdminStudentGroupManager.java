@@ -9,15 +9,21 @@ import top.hcode.hoj.common.exception.StatusFailException;
 import top.hcode.hoj.common.exception.StatusForbiddenException;
 import top.hcode.hoj.dao.assignment.StudentGroupEntityService;
 import top.hcode.hoj.dao.assignment.StudentGroupUserEntityService;
+import top.hcode.hoj.dao.user.UserInfoEntityService;
 import top.hcode.hoj.pojo.entity.assignment.StudentGroup;
 import top.hcode.hoj.pojo.entity.assignment.StudentGroupUser;
+import top.hcode.hoj.pojo.entity.user.UserInfo;
 import top.hcode.hoj.pojo.vo.StudentGroupUserVO;
 import top.hcode.hoj.pojo.vo.StudentGroupVO;
 import top.hcode.hoj.shiro.AccountProfile;
 import top.hcode.hoj.validator.CommonValidator;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 后台管理学生组 Manager
@@ -33,6 +39,9 @@ public class AdminStudentGroupManager {
     private StudentGroupUserEntityService studentGroupUserEntityService;
 
     @Resource
+    private UserInfoEntityService userInfoEntityService;
+
+    @Resource
     private CommonValidator commonValidator;
 
     public List<StudentGroupVO> getGroupList() {
@@ -44,7 +53,7 @@ public class AdminStudentGroupManager {
 
     public List<StudentGroupUserVO> getGroupUserList(Long gid) throws StatusFailException, StatusForbiddenException {
         StudentGroup group = getGroupChecked(gid);
-        checkOwnerOrRoot(group.getOwnerUid());
+        AssignmentAuthHelper.checkOwnerOrRoot(group.getOwnerUid());
         return studentGroupUserEntityService.getGroupUserList(gid);
     }
 
@@ -70,7 +79,7 @@ public class AdminStudentGroupManager {
         commonValidator.validateContentLength(group.getDescription(), "组描述", 500);
 
         StudentGroup oldGroup = getGroupChecked(group.getId());
-        checkOwnerOrRoot(oldGroup.getOwnerUid());
+        AssignmentAuthHelper.checkOwnerOrRoot(oldGroup.getOwnerUid());
 
         boolean isOk = studentGroupEntityService.updateById(new StudentGroup()
                 .setId(oldGroup.getId())
@@ -84,7 +93,7 @@ public class AdminStudentGroupManager {
     @Transactional(rollbackFor = Exception.class)
     public void deleteGroup(Long gid) throws StatusFailException, StatusForbiddenException {
         StudentGroup group = getGroupChecked(gid);
-        checkOwnerOrRoot(group.getOwnerUid());
+        AssignmentAuthHelper.checkOwnerOrRoot(group.getOwnerUid());
 
         boolean isOk = studentGroupEntityService.updateById(new StudentGroup().setId(gid).setIsDeleted(1));
         if (!isOk) {
@@ -95,26 +104,38 @@ public class AdminStudentGroupManager {
     @Transactional(rollbackFor = Exception.class)
     public void addGroupUser(Long gid, List<String> uidList) throws StatusFailException, StatusForbiddenException {
         StudentGroup group = getGroupChecked(gid);
-        checkOwnerOrRoot(group.getOwnerUid());
+        AssignmentAuthHelper.checkOwnerOrRoot(group.getOwnerUid());
 
         if (uidList == null || uidList.isEmpty()) {
             throw new StatusFailException("请至少选择一个学生！");
         }
 
-        for (String uid : uidList) {
-            QueryWrapper<StudentGroupUser> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("gid", gid).eq("uid", uid);
-            StudentGroupUser exists = studentGroupUserEntityService.getOne(queryWrapper, false);
-            if (exists == null) {
-                studentGroupUserEntityService.save(new StudentGroupUser().setGid(gid).setUid(uid));
+        // 去重 + 校验学生账号存在，避免外键异常
+        Set<String> uidSet = new HashSet<>(uidList);
+        long userCount = userInfoEntityService.count(new QueryWrapper<UserInfo>().in("uuid", uidSet));
+        if (userCount != uidSet.size()) {
+            throw new StatusFailException("存在无效的学生账号！");
+        }
+
+        // 一次性查出已存在成员，仅补插缺失项
+        Set<String> existingUids = studentGroupUserEntityService.list(
+                        new QueryWrapper<StudentGroupUser>().eq("gid", gid).in("uid", uidSet))
+                .stream().map(StudentGroupUser::getUid).collect(Collectors.toSet());
+        List<StudentGroupUser> toInsert = new ArrayList<>();
+        for (String uid : uidSet) {
+            if (!existingUids.contains(uid)) {
+                toInsert.add(new StudentGroupUser().setGid(gid).setUid(uid));
             }
+        }
+        if (!toInsert.isEmpty()) {
+            studentGroupUserEntityService.saveBatch(toInsert);
         }
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void removeGroupUser(Long gid, String uid) throws StatusFailException, StatusForbiddenException {
         StudentGroup group = getGroupChecked(gid);
-        checkOwnerOrRoot(group.getOwnerUid());
+        AssignmentAuthHelper.checkOwnerOrRoot(group.getOwnerUid());
 
         QueryWrapper<StudentGroupUser> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("gid", gid).eq("uid", uid);
@@ -130,16 +151,5 @@ public class AdminStudentGroupManager {
             throw new StatusFailException("该学生组不存在！");
         }
         return group;
-    }
-
-    private void checkOwnerOrRoot(String ownerUid) throws StatusForbiddenException {
-        boolean isRoot = SecurityUtils.getSubject().hasRole("root");
-        if (isRoot) {
-            return;
-        }
-        AccountProfile userRolesVo = (AccountProfile) SecurityUtils.getSubject().getPrincipal();
-        if (!userRolesVo.getUid().equals(ownerUid)) {
-            throw new StatusForbiddenException("对不起，你无权限操作！");
-        }
     }
 }

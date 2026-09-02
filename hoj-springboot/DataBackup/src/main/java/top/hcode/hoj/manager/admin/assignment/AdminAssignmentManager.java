@@ -13,23 +13,28 @@ import top.hcode.hoj.dao.assignment.AssignmentProblemEntityService;
 import top.hcode.hoj.dao.assignment.AssignmentStudentEntityService;
 import top.hcode.hoj.dao.assignment.StudentGroupEntityService;
 import top.hcode.hoj.dao.assignment.StudentGroupUserEntityService;
+import top.hcode.hoj.dao.user.UserInfoEntityService;
 import top.hcode.hoj.pojo.dto.AssignmentDTO;
 import top.hcode.hoj.pojo.entity.assignment.Assignment;
 import top.hcode.hoj.pojo.entity.assignment.AssignmentProblem;
 import top.hcode.hoj.pojo.entity.assignment.AssignmentStudent;
 import top.hcode.hoj.pojo.entity.assignment.StudentGroup;
 import top.hcode.hoj.pojo.entity.assignment.StudentGroupUser;
+import top.hcode.hoj.pojo.entity.user.UserInfo;
 import top.hcode.hoj.pojo.vo.AssignmentStudentVO;
 import top.hcode.hoj.pojo.vo.AssignmentVO;
 import top.hcode.hoj.shiro.AccountProfile;
 import top.hcode.hoj.validator.AssignmentValidator;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 后台管理作业 Manager
@@ -52,6 +57,9 @@ public class AdminAssignmentManager {
 
     @Resource
     private StudentGroupUserEntityService studentGroupUserEntityService;
+
+    @Resource
+    private UserInfoEntityService userInfoEntityService;
 
     @Resource
     private AssignmentValidator assignmentValidator;
@@ -104,6 +112,8 @@ public class AdminAssignmentManager {
         assignmentVo.setIsDeleted(assignment.getIsDeleted());
         assignmentVo.setGmtCreate(assignment.getGmtCreate());
         assignmentVo.setGmtModified(assignment.getGmtModified());
+        UserInfo creator = userInfoEntityService.getById(assignment.getCreatorUid());
+        assignmentVo.setCreatorUsername(creator == null ? null : creator.getUsername());
         computeTimeStatus(assignmentVo);
 
         QueryWrapper<AssignmentProblem> problemQueryWrapper = new QueryWrapper<>();
@@ -123,6 +133,7 @@ public class AdminAssignmentManager {
     @Transactional(rollbackFor = Exception.class)
     public void addAssignment(AssignmentDTO assignmentDto) throws StatusFailException, StatusForbiddenException {
         assignmentValidator.validateAssignment(assignmentDto);
+        assignmentValidator.validateProblemList(assignmentDto.getProblemList());
 
         AccountProfile userRolesVo = (AccountProfile) SecurityUtils.getSubject().getPrincipal();
         String uid = userRolesVo.getUid();
@@ -162,12 +173,13 @@ public class AdminAssignmentManager {
     @Transactional(rollbackFor = Exception.class)
     public void updateAssignment(AssignmentDTO assignmentDto) throws StatusFailException, StatusForbiddenException {
         assignmentValidator.validateAssignment(assignmentDto);
+        assignmentValidator.validateProblemList(assignmentDto.getProblemList());
 
         Assignment oldAssignment = assignmentEntityService.getById(assignmentDto.getId());
         if (oldAssignment == null || oldAssignment.getIsDeleted() == 1) {
             throw new StatusFailException("修改失败：该作业不存在！");
         }
-        checkCreatorOrRoot(oldAssignment.getCreatorUid());
+        AssignmentAuthHelper.checkOwnerOrRoot(oldAssignment.getCreatorUid());
 
         boolean isPublished = oldAssignment.getStatus() != null && oldAssignment.getStatus() == 1;
 
@@ -176,9 +188,13 @@ public class AdminAssignmentManager {
         update.setTitle(assignmentDto.getTitle());
         update.setDescription(assignmentDto.getDescription());
         if (!isPublished) {
-            update.setIsRequired(assignmentDto.getIsRequired() == null ? 0 : assignmentDto.getIsRequired());
-            update.setStartTime(assignmentDto.getStartTime());
-            update.setEndTime(assignmentDto.getEndTime());
+            // 未传字段保留原值，避免局部修改时静默清空必做状态/时间窗
+            update.setIsRequired(assignmentDto.getIsRequired() != null
+                    ? assignmentDto.getIsRequired() : oldAssignment.getIsRequired());
+            update.setStartTime(assignmentDto.getStartTime() != null
+                    ? assignmentDto.getStartTime() : oldAssignment.getStartTime());
+            update.setEndTime(assignmentDto.getEndTime() != null
+                    ? assignmentDto.getEndTime() : oldAssignment.getEndTime());
         }
 
         boolean isOk = assignmentEntityService.updateById(update);
@@ -202,7 +218,7 @@ public class AdminAssignmentManager {
         if (assignment == null || assignment.getIsDeleted() == 1) {
             throw new StatusFailException("发布失败：该作业不存在！");
         }
-        checkCreatorOrRoot(assignment.getCreatorUid());
+        AssignmentAuthHelper.checkOwnerOrRoot(assignment.getCreatorUid());
 
         if (assignment.getStatus() != null && assignment.getStatus() == 1) {
             throw new StatusFailException("该作业已发布，请勿重复发布！");
@@ -237,10 +253,13 @@ public class AdminAssignmentManager {
         if (assignment == null || assignment.getIsDeleted() == 1) {
             throw new StatusFailException("延期失败：该作业不存在！");
         }
-        checkCreatorOrRoot(assignment.getCreatorUid());
+        AssignmentAuthHelper.checkOwnerOrRoot(assignment.getCreatorUid());
 
         if (endTime == null) {
             throw new StatusFailException("延期失败：截止时间不能为空！");
+        }
+        if (endTime.before(new Date())) {
+            throw new StatusFailException("延期失败：截止时间不能早于当前时间！");
         }
         if (assignment.getStartTime() != null && endTime.before(assignment.getStartTime())) {
             throw new StatusFailException("延期失败：截止时间不能早于开始时间！");
@@ -262,7 +281,7 @@ public class AdminAssignmentManager {
         if (assignment == null || assignment.getIsDeleted() == 1) {
             throw new StatusFailException("删除失败：该作业不存在！");
         }
-        checkCreatorOrRoot(assignment.getCreatorUid());
+        AssignmentAuthHelper.checkOwnerOrRoot(assignment.getCreatorUid());
 
         boolean isOk = assignmentEntityService.updateById(new Assignment().setId(aid).setIsDeleted(1));
         if (!isOk) {
@@ -272,20 +291,6 @@ public class AdminAssignmentManager {
         AccountProfile userRolesVo = (AccountProfile) SecurityUtils.getSubject().getPrincipal();
         log.info("[{}],[{}],aid:[{}],operatorUid:[{}],operatorUsername:[{}]",
                 "Admin_Assignment", "Delete", aid, userRolesVo.getUid(), userRolesVo.getUsername());
-    }
-
-    /**
-     * 校验当前用户是作业创建者或 root
-     */
-    private void checkCreatorOrRoot(String creatorUid) throws StatusForbiddenException {
-        boolean isRoot = SecurityUtils.getSubject().hasRole("root");
-        if (isRoot) {
-            return;
-        }
-        AccountProfile userRolesVo = (AccountProfile) SecurityUtils.getSubject().getPrincipal();
-        if (!userRolesVo.getUid().equals(creatorUid)) {
-            throw new StatusForbiddenException("对不起，你无权限操作！");
-        }
     }
 
     /**
@@ -311,7 +316,7 @@ public class AdminAssignmentManager {
      * 展开学生组成员 + 手动追加的学生 -> 写入 assignment_student 快照
      */
     private void publishMembers(Assignment assignment, List<Long> groupIdList, List<String> extraUidList)
-            throws StatusForbiddenException {
+            throws StatusForbiddenException, StatusFailException {
 
         boolean isRoot = SecurityUtils.getSubject().hasRole("root");
         AccountProfile userRolesVo = (AccountProfile) SecurityUtils.getSubject().getPrincipal();
@@ -323,7 +328,7 @@ public class AdminAssignmentManager {
             for (Long gid : groupIdList) {
                 StudentGroup group = studentGroupEntityService.getById(gid);
                 if (group == null || group.getIsDeleted() == 1) {
-                    continue;
+                    throw new StatusFailException("发布失败：学生组不存在或已删除（gid=" + gid + "）！");
                 }
                 // 成员归属校验：普通 admin 只能下发自己创建的学生组
                 if (!isRoot && !group.getOwnerUid().equals(uid)) {
@@ -341,13 +346,26 @@ public class AdminAssignmentManager {
             uidSet.addAll(extraUidList);
         }
 
+        // 校验快照学生账号均存在，避免外键异常
+        if (!uidSet.isEmpty()) {
+            long userCount = userInfoEntityService.count(new QueryWrapper<UserInfo>().in("uuid", uidSet));
+            if (userCount != uidSet.size()) {
+                throw new StatusFailException("发布失败：存在无效的学生账号！");
+            }
+        }
+
+        // 一次性查出已存在快照，仅补插缺失项
         Integer isRequired = assignment.getIsRequired() == null ? 0 : assignment.getIsRequired();
+        Set<String> existingUids = new HashSet<>();
+        if (!uidSet.isEmpty()) {
+            List<AssignmentStudent> existing = assignmentStudentEntityService.list(
+                    new QueryWrapper<AssignmentStudent>().eq("aid", assignment.getId()).in("uid", uidSet));
+            existingUids = existing.stream().map(AssignmentStudent::getUid).collect(Collectors.toSet());
+        }
+        List<AssignmentStudent> toInsert = new ArrayList<>();
         for (String studentUid : uidSet) {
-            QueryWrapper<AssignmentStudent> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("aid", assignment.getId()).eq("uid", studentUid);
-            AssignmentStudent exists = assignmentStudentEntityService.getOne(queryWrapper, false);
-            if (exists == null) {
-                assignmentStudentEntityService.save(new AssignmentStudent()
+            if (!existingUids.contains(studentUid)) {
+                toInsert.add(new AssignmentStudent()
                         .setAid(assignment.getId())
                         .setUid(studentUid)
                         .setIsRequired(isRequired)
@@ -355,6 +373,9 @@ public class AdminAssignmentManager {
                         .setAcceptedCount(0)
                         .setScore(0));
             }
+        }
+        if (!toInsert.isEmpty()) {
+            assignmentStudentEntityService.saveBatch(toInsert);
         }
     }
 
@@ -366,6 +387,7 @@ public class AdminAssignmentManager {
         if (problemList == null || problemList.isEmpty()) {
             return;
         }
+        List<AssignmentProblem> toInsert = new ArrayList<>(problemList.size());
         int sort = 0;
         for (AssignmentProblem problem : problemList) {
             problem.setId(null);
@@ -374,8 +396,9 @@ public class AdminAssignmentManager {
                 problem.setScore(0);
             }
             problem.setSort(sort++);
-            assignmentProblemEntityService.save(problem);
+            toInsert.add(problem);
         }
+        assignmentProblemEntityService.saveBatch(toInsert);
     }
 
     private void computeTimeStatus(AssignmentVO vo) {
