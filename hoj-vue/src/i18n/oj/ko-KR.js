@@ -24,6 +24,7 @@ export const m = {
   NavBar_Group: '그룹',
   NavBar_Assignment: '과제',
   NavBar_Practice: '연습',
+  NavBar_Search_Problem: '문제 번호/제목 검색',
   NavBar_Chat: '채팅',
   NavBar_More: '더보기',
   NavBar_Group_Deprecated: '그룹',

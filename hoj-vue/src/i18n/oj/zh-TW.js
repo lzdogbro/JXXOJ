@@ -24,6 +24,7 @@ export const m = {
   NavBar_Group: '團隊',
   NavBar_Assignment: '作業',
   NavBar_Practice: '練習',
+  NavBar_Search_Problem: '搜尋題號/題名',
   NavBar_Chat: '私聊',
   NavBar_More: '更多',
   NavBar_Group_Deprecated: '團隊',

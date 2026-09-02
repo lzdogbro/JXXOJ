@@ -24,6 +24,7 @@ export const m = {
   NavBar_Group: 'Group',
   NavBar_Assignment: 'Assignment',
   NavBar_Practice: 'Practice',
+  NavBar_Search_Problem: 'Search # / title',
   NavBar_More: 'More',
   NavBar_Group_Deprecated: 'Group',
   NavBar_About: 'About',
