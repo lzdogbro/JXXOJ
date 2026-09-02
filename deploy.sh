@@ -37,6 +37,8 @@ SQL_DIR="${HOJ_ROOT}/sqlAndsetting"
 
 # ---- 可配置版本号 ----
 BACKEND_JAR_NAME="${BACKEND_JAR_NAME:-hoj-backend-4.6.jar}"
+JUDGE_SERVER_JAR_NAME="${JUDGE_SERVER_JAR_NAME:-hoj-judgeServer-4.6.jar}"
+JUDGE_SERVER_CONTAINER_NAME="${JUDGE_SERVER_CONTAINER_NAME:-hoj-judgeserver}"
 
 # =============================================================================
 # 构建函数
@@ -1132,15 +1134,14 @@ sync_artifacts() {
 }
 
 apply_database_migrations() {
-    local migration_file="${SQL_DIR}/hoj-pk-chat-update.sql"
+    # 数据库增量脚本列表（保持幂等，按顺序应用；缺文件仅警告跳过）
+    local migration_files=(
+        "${SQL_DIR}/hoj-pk-chat-update.sql"
+        "${SQL_DIR}/hoj-assignment-update.sql"
+    )
     local mysql_container="${MYSQL_CONTAINER_NAME:-hoj-mysql}"
 
-    if [ ! -f "${migration_file}" ]; then
-        log_error "数据库增量脚本不存在: ${migration_file}"
-        exit 1
-    fi
-
-    log_step "应用 PK 与私聊数据库增量..."
+    log_step "等待 MySQL 就绪..."
     local attempt
     for attempt in $(seq 1 30); do
         if docker exec "${mysql_container}" sh -c 'mysqladmin ping -h localhost -u root -p"$MYSQL_ROOT_PASSWORD" --silent' >/dev/null 2>&1; then
@@ -1154,13 +1155,50 @@ apply_database_migrations() {
         exit 1
     fi
 
-    docker exec -i "${mysql_container}" sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" hoj' < "${migration_file}"
-    log_info "PK 与私聊数据库增量已应用"
+    local migration_file
+    for migration_file in "${migration_files[@]}"; do
+        if [ ! -f "${migration_file}" ]; then
+            log_warn "数据库增量脚本不存在，跳过: ${migration_file}"
+            continue
+        fi
+        log_step "应用数据库增量: $(basename "${migration_file}")..."
+        docker exec -i "${mysql_container}" sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" hoj' < "${migration_file}"
+        log_info "$(basename "${migration_file}") 已应用"
+    done
 }
 
 # =============================================================================
 # Docker 部署控制
 # =============================================================================
+
+deploy_judgeserver() {
+    local jar_src="${BACKEND_DIR}/JudgeServer/target/${JUDGE_SERVER_JAR_NAME}"
+    local container="${JUDGE_SERVER_CONTAINER_NAME}"
+    local jar_dst="/judge/server/app.jar"
+
+    if [ ! -f "${jar_src}" ]; then
+        log_warn "JudgeServer JAR 不存在: ${jar_src}"
+        log_warn "跳过本地热替换，沿用镜像自带 JAR（先运行 './deploy.sh build' 构建）"
+        return 0
+    fi
+
+    if ! docker ps --format '{{.Names}}' | grep -qx "${container}"; then
+        log_warn "JudgeServer 容器未运行: ${container}，跳过 JAR 热替换"
+        return 0
+    fi
+
+    log_step "部署 JudgeServer JAR（热替换容器内 JAR）..."
+
+    # 首次备份容器内原 JAR（幂等，已备份则跳过）
+    if ! docker exec "${container}" sh -c "test -f ${jar_dst}.bak" >/dev/null 2>&1; then
+        docker exec "${container}" sh -c "cp -n ${jar_dst} ${jar_dst}.bak" 2>/dev/null || true
+        log_info "已备份容器内原 JAR: ${jar_dst}.bak"
+    fi
+
+    docker cp "${jar_src}" "${container}:${jar_dst}"
+    docker restart "${container}"
+    log_info "JudgeServer JAR 已更新并重启: ${container}"
+}
 
 docker_up() {
     log_step "启动 Docker 容器..."
@@ -1175,6 +1213,7 @@ docker_up() {
     docker-compose up -d --build
 
     apply_database_migrations
+    deploy_judgeserver
 
     log_info "Docker 容器启动完成!"
     echo ""
