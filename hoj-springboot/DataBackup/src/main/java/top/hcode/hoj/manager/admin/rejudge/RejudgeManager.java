@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import top.hcode.hoj.common.exception.StatusFailException;
+import top.hcode.hoj.dao.assignment.AssignmentStudentEntityService;
 import top.hcode.hoj.dao.contest.ContestRecordEntityService;
 import top.hcode.hoj.dao.judge.JudgeCaseEntityService;
 import top.hcode.hoj.dao.judge.JudgeEntityService;
@@ -38,6 +39,9 @@ public class RejudgeManager {
 
     @Resource
     private UserAcproblemEntityService userAcproblemEntityService;
+
+    @Resource
+    private AssignmentStudentEntityService assignmentStudentEntityService;
 
     @Resource
     private ContestRecordEntityService contestRecordEntityService;
@@ -210,7 +214,7 @@ public class RejudgeManager {
     public Judge manualJudge(Long submitId, Integer status, Integer score) throws StatusFailException {
         QueryWrapper<Judge> judgeQueryWrapper = new QueryWrapper<>();
         judgeQueryWrapper
-                .select("submit_id", "status", "judger", "cid", "pid", "uid")
+                .select("submit_id", "status", "judger", "cid", "pid", "uid", "aid")
                 .eq("submit_id", submitId);
         Judge judge = judgeEntityService.getOne(judgeQueryWrapper);
         if (judge == null) {
@@ -273,6 +277,11 @@ public class RejudgeManager {
             }
         }
 
+        if (judge.getAid() != null && judge.getAid() != 0) {
+            assignmentStudentEntityService.updateCompletion(judge.getAid(), judge.getUid(),
+                    Constants.Judge.STATUS_ACCEPTED.getStatus());
+        }
+
         if (judge.getCid() != 0) {
             UpdateWrapper<ContestRecord> contestRecordUpdateWrapper = new UpdateWrapper<>();
             contestRecordUpdateWrapper.eq("submit_id", submitId)
@@ -300,7 +309,7 @@ public class RejudgeManager {
     public Judge cancelJudge(Long submitId) throws StatusFailException {
         QueryWrapper<Judge> judgeQueryWrapper = new QueryWrapper<>();
         judgeQueryWrapper
-                .select("submit_id", "status", "judger", "cid")
+                .select("submit_id", "status", "judger", "cid", "uid", "aid")
                 .eq("submit_id", submitId)
                 .last("for update");
         Judge judge = judgeEntityService.getOne(judgeQueryWrapper);
@@ -329,6 +338,11 @@ public class RejudgeManager {
             QueryWrapper<UserAcproblem> userAcproblemQueryWrapper = new QueryWrapper<>();
             userAcproblemQueryWrapper.eq("submit_id", judge.getSubmitId());
             userAcproblemEntityService.remove(userAcproblemQueryWrapper);
+        }
+
+        if (judge.getAid() != null && judge.getAid() != 0) {
+            assignmentStudentEntityService.updateCompletion(judge.getAid(), judge.getUid(),
+                    Constants.Judge.STATUS_ACCEPTED.getStatus());
         }
 
         if (judge.getCid() != 0) {

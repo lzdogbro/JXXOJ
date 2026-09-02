@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.hcode.hoj.mapper.AssignmentProblemMapper">
+
+    <resultMap id="map_AssignmentProblemList" type="top.hcode.hoj.pojo.vo.AssignmentProblemVO">
+        <result column="display_id" property="displayId"></result>
+        <result column="pid" property="pid"></result>
+        <result column="problem_id" property="problemId"></result>
+        <result column="title" property="title"></result>
+        <result column="difficulty" property="difficulty"></result>
+        <result column="type" property="type"></result>
+        <result column="score" property="score"></result>
+    </resultMap>
+
+    <select id="getAssignmentProblemList" resultMap="map_AssignmentProblemList">
+        SELECT ap.display_id, ap.pid, p.problem_id, p.title, p.difficulty, p.type, ap.score
+        FROM assignment_problem ap
+        LEFT JOIN problem p ON ap.pid = p.id
+        WHERE ap.aid = #{aid}
+        ORDER BY ap.sort ASC, ap.id ASC
+    </select>
+</mapper>

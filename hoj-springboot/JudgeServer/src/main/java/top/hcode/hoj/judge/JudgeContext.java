@@ -3,6 +3,7 @@ package top.hcode.hoj.judge;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import top.hcode.hoj.common.exception.SystemError;
+import top.hcode.hoj.dao.AssignmentStudentEntityService;
 import top.hcode.hoj.dao.ContestRecordEntityService;
 import top.hcode.hoj.dao.UserAcproblemEntityService;
 import top.hcode.hoj.judge.entity.LanguageConfig;
@@ -32,6 +33,9 @@ public class JudgeContext {
 
     @Autowired
     private ContestRecordEntityService contestRecordEntityService;
+
+    @Autowired
+    private AssignmentStudentEntityService assignmentStudentEntityService;
 
     @Resource
     private LanguageConfigLoader languageConfigLoader;
@@ -99,11 +103,17 @@ public class JudgeContext {
     public void updateOtherTable(Long submitId,
                                  Integer status,
                                  Long cid,
+                                 Long aid,
                                  String uid,
                                  Long pid,
                                  Long gid,
                                  Integer score,
                                  Integer useTime) {
+
+        // 作业提交：重算该学生在此作业的完成情况（影响范围 = 单个 (aid, uid)，AC 制）
+        if (aid != null && aid != 0) {
+            assignmentStudentEntityService.updateCompletion(aid, uid, Constants.Judge.STATUS_ACCEPTED.getStatus());
+        }
 
         if (cid == 0) { // 非比赛提交
             // 如果是AC,就更新user_acproblem表,

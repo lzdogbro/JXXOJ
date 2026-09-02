@@ -18,6 +18,23 @@
         <result column="gmt_modified" property="gmtModified"></result>
     </resultMap>
 
+    <resultMap id="map_MyAssignmentList" type="top.hcode.hoj.pojo.vo.AssignmentVO">
+        <id column="id" property="id"></id>
+        <result column="title" property="title"></result>
+        <result column="description" property="description"></result>
+        <result column="creator_uid" property="creatorUid"></result>
+        <result column="creator_username" property="creatorUsername"></result>
+        <result column="is_required" property="isRequired"></result>
+        <result column="status" property="status"></result>
+        <result column="start_time" property="startTime"></result>
+        <result column="end_time" property="endTime"></result>
+        <result column="is_deleted" property="isDeleted"></result>
+        <result column="problem_count" property="problemCount"></result>
+        <result column="accepted_count" property="acceptedCount"></result>
+        <result column="gmt_create" property="gmtCreate"></result>
+        <result column="gmt_modified" property="gmtModified"></result>
+    </resultMap>
+
     <select id="getAssignmentList" resultMap="map_AssignmentList">
         SELECT a.id, a.title, a.description, a.creator_uid, a.is_required, a.status,
                a.start_time, a.end_time, a.is_deleted, a.gmt_create, a.gmt_modified,
@@ -41,5 +58,23 @@
             </if>
         </where>
         ORDER BY a.id DESC
+    </select>
+
+    <select id="getMyAssignmentList" resultMap="map_MyAssignmentList">
+        SELECT a.id, a.title, a.description, a.creator_uid, a.is_required, a.status,
+               a.start_time, a.end_time, a.is_deleted, a.gmt_create, a.gmt_modified,
+               u.username AS creator_username,
+               COALESCE(pc.problem_count, 0) AS problem_count,
+               COALESCE(s.accepted_count, 0) AS accepted_count
+        FROM assignment_student s
+        INNER JOIN assignment a ON s.aid = a.id AND a.is_deleted = 0
+        LEFT JOIN user_info u ON a.creator_uid = u.uuid
+        LEFT JOIN (
+            SELECT aid, COUNT(*) AS problem_count FROM assignment_problem GROUP BY aid
+        ) pc ON pc.aid = a.id
+        WHERE s.uid = #{uid}
+        ORDER BY (s.status = 1) ASC,
+                 (a.is_required = 1 AND s.status != 1) DESC,
+                 a.id DESC
     </select>
 </mapper>

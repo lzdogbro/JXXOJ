@@ -114,6 +114,7 @@ public class JudgeManager {
 
         boolean isContestSubmission = judgeDto.getCid() != null && judgeDto.getCid() != 0;
         boolean isTrainingSubmission = judgeDto.getTid() != null && judgeDto.getTid() != 0;
+        boolean isAssignmentSubmission = judgeDto.getAid() != null && judgeDto.getAid() != 0;
 
         SwitchConfig switchConfig = nacosSwitchConfig.getSwitchConfig();
         if (!isContestSubmission && switchConfig.getDefaultSubmitInterval() > 0) { // 非比赛提交有限制限制
@@ -130,6 +131,7 @@ public class JudgeManager {
                 .setCode(judgeDto.getCode())
                 .setCid(judgeDto.getCid())
                 .setGid(judgeDto.getGid())
+                .setAid(judgeDto.getAid() == null ? 0L : judgeDto.getAid())
                 .setLanguage(judgeDto.getLanguage())
                 .setLength(judgeDto.getCode().length())
                 .setUid(userRolesVo.getUid())
@@ -139,8 +141,10 @@ public class JudgeManager {
                 .setVersion(0)
                 .setIp(IpUtils.getUserIpAddr(request));
 
-        // 如果比赛id不等于0，则说明为比赛提交
-        if (isContestSubmission) {
+        // 提交分派：作业 > 比赛 > 训练 > 普通
+        if (isAssignmentSubmission) {
+            beforeDispatchInitManager.initAssignmentSubmission(judgeDto.getAid(), judgeDto.getPid(), userRolesVo, judge);
+        } else if (isContestSubmission) {
             beforeDispatchInitManager.initContestSubmission(judgeDto.getCid(), judgeDto.getPid(), userRolesVo, judge);
         } else if (isTrainingSubmission) {
             beforeDispatchInitManager.initTrainingSubmission(judgeDto.getTid(), judgeDto.getPid(), userRolesVo, judge);

@@ -44,6 +44,8 @@ import GroupMemberList from '@/views/oj/group/children/GroupMemberList.vue'
 import GroupSetting from '@/views/oj/group/children/GroupSetting.vue'
 import GroupRank from '@/views/oj/group/children/GroupRank.vue'
 import AssignmentList from '@/views/oj/assignment/AssignmentList.vue'
+import AssignmentDetails from '@/views/oj/assignment/AssignmentDetails.vue'
+import AssignmentProblemList from '@/views/oj/assignment/AssignmentProblemList.vue'
 import Chat from '@/views/oj/chat/Chat.vue'
 import PkPage from '@/views/oj/pk/PkPage.vue'
 import PkHistory from '@/views/oj/pk/PkHistory.vue'
@@ -416,7 +418,25 @@ const ojRoutes = [
     path: '/assignment',
     name: 'AssignmentList',
     component: AssignmentList,
-    meta: { title: 'Assignment' }
+    meta: { title: 'Assignment', requireAuth: true }
+  },
+  {
+    name: 'AssignmentDetails',
+    path: '/assignment/:assignmentID',
+    component: AssignmentDetails,
+    meta: { title: 'Assignment Details', requireAuth: true }
+  },
+  {
+    name: 'AssignmentProblemList',
+    path: '/assignment/:assignmentID/problem',
+    component: AssignmentProblemList,
+    meta: { title: 'Assignment Problem List', requireAuth: true }
+  },
+  {
+    name: 'AssignmentFullProblemDetails',
+    path: '/assignment/:assignmentID/problem/:problemID/full-screen',
+    component: Problem,
+    meta: { title: 'Assignment Problem Details', requireAuth: true, fullScreenSource: 'assignment' }
   },
   {
     path: '/chat',

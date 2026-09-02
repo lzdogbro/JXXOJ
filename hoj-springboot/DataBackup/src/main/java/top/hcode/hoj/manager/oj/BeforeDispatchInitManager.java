@@ -11,6 +11,9 @@ import top.hcode.hoj.common.exception.StatusAccessDeniedException;
 import top.hcode.hoj.common.exception.StatusFailException;
 import top.hcode.hoj.common.exception.StatusForbiddenException;
 import top.hcode.hoj.common.exception.StatusNotFoundException;
+import top.hcode.hoj.dao.assignment.AssignmentEntityService;
+import top.hcode.hoj.dao.assignment.AssignmentProblemEntityService;
+import top.hcode.hoj.dao.assignment.AssignmentStudentEntityService;
 import top.hcode.hoj.dao.contest.ContestEntityService;
 import top.hcode.hoj.dao.contest.ContestProblemEntityService;
 import top.hcode.hoj.dao.contest.ContestRecordEntityService;
@@ -19,6 +22,9 @@ import top.hcode.hoj.dao.problem.ProblemEntityService;
 import top.hcode.hoj.dao.training.TrainingEntityService;
 import top.hcode.hoj.dao.training.TrainingProblemEntityService;
 import top.hcode.hoj.dao.training.TrainingRecordEntityService;
+import top.hcode.hoj.pojo.entity.assignment.Assignment;
+import top.hcode.hoj.pojo.entity.assignment.AssignmentProblem;
+import top.hcode.hoj.pojo.entity.assignment.AssignmentStudent;
 import top.hcode.hoj.pojo.entity.contest.Contest;
 import top.hcode.hoj.pojo.entity.contest.ContestProblem;
 import top.hcode.hoj.pojo.entity.contest.ContestRecord;
@@ -34,6 +40,7 @@ import top.hcode.hoj.validator.GroupValidator;
 import top.hcode.hoj.validator.TrainingValidator;
 
 import javax.annotation.Resource;
+import java.util.Date;
 import java.util.Objects;
 
 /**
@@ -46,6 +53,15 @@ public class BeforeDispatchInitManager {
 
     @Resource
     private ContestEntityService contestEntityService;
+
+    @Resource
+    private AssignmentEntityService assignmentEntityService;
+
+    @Resource
+    private AssignmentProblemEntityService assignmentProblemEntityService;
+
+    @Resource
+    private AssignmentStudentEntityService assignmentStudentEntityService;
 
     @Resource
     private ContestRecordEntityService contestRecordEntityService;
@@ -246,6 +262,59 @@ public class BeforeDispatchInitManager {
                 .setSubmitId(judge.getSubmitId())
                 .setUid(userRolesVo.getUid());
         trainingRecordEntityService.save(trainingRecord);
+    }
+
+
+    @Transactional(rollbackFor = Exception.class)
+    public void initAssignmentSubmission(Long aid, String displayId, AccountProfile userRolesVo, Judge judge)
+            throws StatusNotFoundException, StatusForbiddenException {
+
+        Assignment assignment = assignmentEntityService.getById(aid);
+        if (assignment == null || assignment.getIsDeleted() == 1) {
+            throw new StatusNotFoundException("对不起，该作业不存在！");
+        }
+        if (assignment.getStatus() == null || assignment.getStatus() != 1) {
+            throw new StatusForbiddenException("该作业尚未发布，不可提交！");
+        }
+
+        Date now = new Date();
+        if (assignment.getStartTime() != null && now.before(assignment.getStartTime())) {
+            throw new StatusForbiddenException("作业未开始，不可提交！");
+        }
+        if (assignment.getEndTime() != null && now.after(assignment.getEndTime())) {
+            throw new StatusForbiddenException("作业已结束，不可再提交！");
+        }
+
+        // 校验当前用户已被下发该作业（assignment_student 有快照记录）
+        long assignedCount = assignmentStudentEntityService.count(
+                new QueryWrapper<AssignmentStudent>().eq("aid", aid).eq("uid", userRolesVo.getUid()));
+        if (assignedCount == 0) {
+            throw new StatusForbiddenException("你未被布置该作业，无权提交！");
+        }
+
+        // 解析作业内展示编号 displayId -> pid
+        QueryWrapper<AssignmentProblem> assignmentProblemQueryWrapper = new QueryWrapper<>();
+        assignmentProblemQueryWrapper.eq("aid", aid).eq("display_id", displayId);
+        AssignmentProblem assignmentProblem = assignmentProblemEntityService.getOne(assignmentProblemQueryWrapper, false);
+        if (assignmentProblem == null) {
+            throw new StatusForbiddenException("错误！当前题目不属于该作业，不可提交！");
+        }
+
+        Problem problem = problemEntityService.getById(assignmentProblem.getPid());
+        if (problem == null) {
+            throw new StatusForbiddenException("错误！当前题目已不存在，不可提交！");
+        }
+        if (problem.getAuth() == 2) {
+            throw new StatusForbiddenException("错误！当前题目已被隐藏，不可提交！");
+        }
+
+        judge.setAid(aid)
+                .setCpid(0L)
+                .setPid(problem.getId())
+                .setDisplayPid(problem.getProblemId());
+
+        // 将新提交数据插入数据库
+        judgeEntityService.save(judge);
     }
 
 

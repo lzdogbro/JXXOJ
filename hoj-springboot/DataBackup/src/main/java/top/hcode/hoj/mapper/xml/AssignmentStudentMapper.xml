@@ -19,4 +19,16 @@
         WHERE s.aid = #{aid}
         ORDER BY s.gmt_create ASC
     </select>
+
+    <select id="countAcceptedByAidUid" resultType="int">
+        SELECT COUNT(DISTINCT pid) FROM judge WHERE aid = #{aid} AND uid = #{uid} AND status = #{acceptedStatus}
+    </select>
+
+    <select id="countProblemByAid" resultType="int">
+        SELECT COUNT(*) FROM assignment_problem WHERE aid = #{aid}
+    </select>
+
+    <select id="getAcceptedPidsByAidUid" resultType="long">
+        SELECT DISTINCT pid FROM judge WHERE aid = #{aid} AND uid = #{uid} AND status = #{acceptedStatus}
+    </select>
 </mapper>
