@@ -33,6 +33,7 @@ import top.hcode.hoj.pojo.entity.user.UserInfo;
 import top.hcode.hoj.pojo.vo.AssignmentProblemVO;
 import top.hcode.hoj.pojo.vo.AssignmentVO;
 import top.hcode.hoj.pojo.vo.ProblemCountVO;
+import top.hcode.hoj.pojo.vo.ProblemFullScreenListVO;
 import top.hcode.hoj.pojo.vo.ProblemInfoVO;
 import top.hcode.hoj.shiro.AccountProfile;
 import top.hcode.hoj.utils.Constants;
@@ -154,6 +155,31 @@ public class AssignmentManager {
         String uid = userRolesVo.getUid();
         checkAssigned(aid, uid);
         return getProblemListWithStatus(aid, uid);
+    }
+
+    /**
+     * 作业题目专注模式底部列表（复用训练/比赛的专注模式导航条，返回兼容结构）
+     */
+    public List<ProblemFullScreenListVO> getAssignmentFullScreenProblemList(Long aid)
+            throws StatusNotFoundException, StatusForbiddenException {
+        checkAndGetAssignment(aid);
+        AccountProfile userRolesVo = (AccountProfile) SecurityUtils.getSubject().getPrincipal();
+        String uid = userRolesVo.getUid();
+        checkAssigned(aid, uid);
+        List<AssignmentProblemVO> problemList = getProblemListWithStatus(aid, uid);
+        List<ProblemFullScreenListVO> result = new ArrayList<>();
+        for (AssignmentProblemVO vo : problemList) {
+            ProblemFullScreenListVO item = new ProblemFullScreenListVO();
+            item.setPid(vo.getPid());
+            item.setProblemId(vo.getProblemId());
+            item.setDisplayId(vo.getDisplayId());
+            item.setTitle(vo.getTitle());
+            item.setScore(vo.getScore());
+            // 已 AC → 0（JUDGE_STATUS.ACCEPTED，导航条显示对勾）；未 AC → null（不显示图标）
+            item.setStatus(vo.getStatus() != null && vo.getStatus() == 1 ? 0 : null);
+            result.add(item);
+        }
+        return result;
     }
 
     /**

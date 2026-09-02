@@ -78,6 +78,9 @@ public class ProblemManager {
     @Autowired
     private ContestManager contestManager;
 
+    @Autowired
+    private AssignmentManager assignmentManager;
+
     /**
      * @MethodName getProblemList
      * @Params * @param null
@@ -392,14 +395,16 @@ public class ProblemManager {
         }
     }
 
-    public List<ProblemFullScreenListVO> getFullScreenProblemList(Long tid, Long cid)
-            throws StatusFailException, StatusForbiddenException, StatusAccessDeniedException {
-        if (tid != null) {
+    public List<ProblemFullScreenListVO> getFullScreenProblemList(Long tid, Long cid, Long aid)
+            throws StatusFailException, StatusForbiddenException, StatusAccessDeniedException, StatusNotFoundException {
+        if (aid != null) {
+            return assignmentManager.getAssignmentFullScreenProblemList(aid);
+        } else if (tid != null) {
             return trainingManager.getProblemFullScreenList(tid);
         } else if (cid != null && cid != 0) {
             return contestManager.getContestFullScreenProblemList(cid);
         } else {
-            throw new StatusFailException("请求参数错误：tid或cid不能为空");
+            throw new StatusFailException("请求参数错误：tid、cid或aid不能为空");
         }
     }
 }

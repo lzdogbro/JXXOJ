@@ -802,11 +802,12 @@
     </div>
     <ProblemHorizontalMenu
       v-if="showProblemHorizontalMenu"
-      :pid.sync="problemData.problem.id" 
+      :pid.sync="problemData.problem.id"
       :cid="contestID"
       :tid="trainingID"
       ref="problemHorizontalMenu"
-      :gid="groupID">
+      :gid="groupID"
+      :aid="aid">
     </ProblemHorizontalMenu>
 
     <el-dialog

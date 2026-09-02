@@ -30,6 +30,6 @@ public interface ProblemService {
 
     public CommonResult<LastAcceptedCodeVO> getUserLastAcceptedCode(Long pid, Long cid);
 
-    public CommonResult<List<ProblemFullScreenListVO>> getFullScreenProblemList(Long tid, Long cid);
+    public CommonResult<List<ProblemFullScreenListVO>> getFullScreenProblemList(Long tid, Long cid, Long aid);
 
 }

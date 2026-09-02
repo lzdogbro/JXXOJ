@@ -13,6 +13,8 @@ public class ProblemFullScreenListVO {
 
     private String problemId;
 
+    private String displayId;
+
     private String title;
 
     private Integer status;

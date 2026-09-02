@@ -72,11 +72,13 @@ public class ProblemServiceImpl implements ProblemService {
     }
 
     @Override
-    public CommonResult<List<ProblemFullScreenListVO>> getFullScreenProblemList(Long tid, Long cid) {
+    public CommonResult<List<ProblemFullScreenListVO>> getFullScreenProblemList(Long tid, Long cid, Long aid) {
         try {
-            return CommonResult.successResponse(problemManager.getFullScreenProblemList(tid, cid));
+            return CommonResult.successResponse(problemManager.getFullScreenProblemList(tid, cid, aid));
         } catch (StatusFailException e) {
             return CommonResult.errorResponse(e.getMessage());
+        } catch (StatusNotFoundException e) {
+            return CommonResult.errorResponse(e.getMessage(), ResultStatus.NOT_FOUND);
         } catch (StatusForbiddenException e) {
             return CommonResult.errorResponse(e.getMessage(), ResultStatus.FORBIDDEN);
         } catch (StatusAccessDeniedException e) {

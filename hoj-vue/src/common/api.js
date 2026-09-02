@@ -371,8 +371,8 @@ const ojApi = {
     })
   },
   // 获取题目专注模式底部题目列表
-  getFullScreenProblemList(tid, cid){
-    let params = {tid, cid}
+  getFullScreenProblemList(tid, cid, aid){
+    let params = {tid, cid, aid}
     return ajax('/api/get-full-screen-problem-list', 'get', {
       params: params
     })
