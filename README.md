@@ -60,83 +60,169 @@ HOJ 是一个基于 Vue 和 Spring Boot、Spring Cloud Alibaba 构建的**前后
 
 ---
 
-## 二、快速部署
+## 二、部署指南
 
-### 方式一：使用 deploy.sh 一键部署（推荐）
+这一章讲清楚怎么把 JXXOJ 跑起来。**先花 10 秒判断你属于哪种情况**，再按对应步骤走即可。
 
-项目根目录下的 `deploy.sh` 脚本可以完成**构建 → 打包 → 部署**的全流程。
+### 2.0 两种部署场景
 
-```bash
-# 首次部署（初始化部署目录）
-./deploy.sh init
+| | 场景 A：本机 / 开发机 | 场景 B：云端生产机 |
+|---|---|---|
+| 机器上有什么 | 源码 + Docker | 只有部署包目录（**没有源码、没有 deploy.sh**） |
+| 什么时候用 | 改完代码想立刻跑起来看效果 | 正式上线、或换一台干净机器部署 |
+| 用什么 | `deploy.sh` | `build-cloud-bundle.sh`（本地打包）→ 上传 → `docker compose up -d --build` |
 
-# 一键构建 + 部署（最常用）
-./deploy.sh deploy
+---
 
-# 仅构建（后端 JAR + 前端 dist）
-./deploy.sh build
+### 2.1 环境准备
 
-# 仅同步构建产物到 myhoj-deploy
-./deploy.sh sync
+| 依赖 | 要求 | 什么时候需要 |
+|---|---|---|
+| Docker | 20.10+ | 两个场景都要 |
+| Docker Compose | v2（`docker compose`） | 两个场景都要 |
+| JDK + Maven | JDK 8+、Maven 3.6+ | 仅场景 A（本机构建） |
+| Node.js | ≥ 17 | 仅场景 A（构建前端，需 `--openssl-legacy-provider`） |
 
-# 仅重启容器
-./deploy.sh restart
+> 系统建议 CentOS 8+ / Ubuntu 16.04+，配置 2 核 4G 以上。判题机（JudgeServer）对内核较敏感，内核过老可能无法启动。
 
-# 查看容器状态
-./deploy.sh status
-```
+---
 
-**完整流程说明**：
+### 2.2 场景 A：本机部署（deploy.sh）
 
-```bash
-# 1. 初始化 myhoj-deploy 目录（含 docker-compose.yml、Dockerfile、nginx 配置等）
-./deploy.sh init
-
-# 2. 构建后端 JAR
-#    cd hoj-springboot && mvn package -DskipTests -q
-
-# 3. 构建前端 dist
-#    cd hoj-vue && npm run build
-
-# 4. 复制构建产物到 myhoj-deploy
-#    - hoj-backend-4.6.jar  → src/backend/
-#    - dist/*               → src/frontend/html/
-#    - hoj-scrollBoard/*    → src/frontend/scrollBoard/
-#    - hoj.sql              → src/mysql/
-
-# 5. 停止旧容器 + 重新构建镜像 + 启动
-#    docker-compose down && docker-compose up -d --build
-#    启动后自动执行：
-#    - 数据库增量迁移（hoj-pk-chat-update.sql + hoj-assignment-update.sql）
-#    - JudgeServer JAR 热替换（本地构建的判题 jar → 容器 /judge/server/app.jar 并重启）
-./deploy.sh deploy
-```
-
-**关键端口**：
-
-| 服务 | 端口 |
-|------|------|
-| 前端 Nginx | 8003 |
-| 后端 API | 6688 |
-| MySQL | 3391 |
-| Redis | 6380 |
-| Nacos | 8849 |
-
-**环境变量**（可选配置）：
+**一条命令搞定首次部署：**
 
 ```bash
-export MYHOJ_DEPLOY_DIR=/path/to/myhoj-deploy        # 部署目录路径（默认: ../myhoj-deploy）
-export BACKEND_JAR_NAME=hoj-backend-4.6.jar          # 后端 JAR 文件名
-export JUDGE_SERVER_JAR_NAME=hoj-judgeServer-4.6.jar # 判题 JAR 文件名
+./deploy.sh deploy   # = build（构建）→ init（初始化目录）→ sync（同步产物）→ up（启动容器）
 ```
 
-### 方式二：基于原生 hoj-deploy 部署
+完成后访问 `http://localhost:8003`。
 
-部署文档：[https://docs.hdoi.cn/deploy/docker](https://docs.hdoi.cn/deploy/docker)
+**命令速查表：**
 
-部署仓库：[https://gitee.com/himitzh0730/hoj-deploy](https://gitee.com/himitzh0730/hoj-deploy)
+| 命令 | 作用 |
+|---|---|
+| `./deploy.sh deploy`（默认） | 完整流程：构建 → 初始化 → 同步 → 启动 |
+| `./deploy.sh build` | 仅构建后端 JAR + 前端 dist |
+| `./deploy.sh init` | 初始化 myhoj-deploy 目录结构 |
+| `./deploy.sh sync` | 仅同步构建产物到 myhoj-deploy |
+| `./deploy.sh up` | 仅启动容器 |
+| `./deploy.sh down` | 仅停止容器 |
+| `./deploy.sh restart` | 重启容器（down + up，含重新构建） |
+| `./deploy.sh status` | 查看容器状态 |
+| `./deploy.sh judgeserver` | 仅热替换 JudgeServer JAR（不重建镜像，适合只改判题逻辑时快速生效） |
 
-> ⚠️ **注意**：原生 hoj-deploy 使用官方 Docker 镜像，不包含私聊、PK 对战等二开功能。如需使用二开版本，请使用方式一中的 `deploy.sh`。
+**可选环境变量：**
+
+```bash
+export MYHOJ_DEPLOY_DIR=/path/to/myhoj-deploy         # 部署目录（默认 ../myhoj-deploy）
+export BACKEND_JAR_NAME=hoj-backend-4.6.jar           # 后端 JAR 名
+export JUDGE_SERVER_JAR_NAME=hoj-judgeServer-4.6.jar  # 判题 JAR 名
+```
+
+---
+
+### 2.3 场景 B：云端生产部署（自包含部署包）
+
+云端机器只有 `myhoj-deploy` 目录，**没有源码、没有 deploy.sh**。部署分三步：本地打包 → 改配置 → 云端一条命令启动。
+
+**第 1 步（本地）：打包**
+
+```bash
+./build-cloud-bundle.sh              # 完整：生成目录 + 复制数据 + 打 tarball
+./build-cloud-bundle.sh --no-tar     # 只生成目录，不打包
+./build-cloud-bundle.sh --skip-data  # 跳过数据目录复制（云端自行恢复数据）
+```
+
+脚本做了什么：
+1. 在 `../myhoj-deploy-cloud` 生成全新的自包含目录（**不会碰你现有的 `myhoj-deploy`**，有路径安全检查）；
+2. 同步后端 jar、判题 jar（→ `app.jar`）、前端 dist、滚榜、`hoj.sql`、表结构迁移脚本；
+3. 复制 `hoj/` 数据目录（用 `sudo cp -a` 保留属主/权限，mysql 数据目录对 owner 敏感）；
+4. 打包成 `../myhoj-deploy-cloud.tar.gz`。
+
+**第 2 步（本地）：改密码**
+
+打开 `myhoj-deploy-cloud/standAlone/.env`，把占位的密钥改成真实值：
+- `JWT_TOKEN_SECRET` / `JUDGE_TOKEN`
+- `MYSQL_ROOT_PASSWORD` / `REDIS_PASSWORD` / `NACOS_PASSWORD`
+
+**第 3 步（云端）：上传 + 一条命令部署**
+
+```bash
+tar xzf myhoj-deploy-cloud.tar.gz
+cd myhoj-deploy-cloud/standAlone
+docker compose up -d --build
+```
+
+这一条命令会自动完成：
+- build 后端 / 前端 / 判题机 / 迁移容器；
+- MySQL 就绪后**自动应用表结构迁移**（只改结构、不碰数据）。
+
+---
+
+### 2.4 部署包目录结构
+
+```
+myhoj-deploy/
+├── standAlone/             # 单机部署（一台机器跑全部服务）
+│   ├── docker-compose.yml
+│   └── .env                # 密码 / token 在这里改
+├── distributed/            # 分布式部署（主服务与判题机分离）
+├── src/                    # 各容器的构建上下文
+│   ├── backend/            # 后端
+│   ├── frontend/           # 前端 nginx
+│   ├── judgeserver/        # 判题机（远程基础镜像 + 二开 jar）
+│   ├── mysql/              # MySQL（含 hoj.sql 初始化）
+│   ├── mysql-checker/      # 表结构迁移容器
+│   └── rsync/              # 评测数据同步
+└── hoj/                    # 数据持久化目录（testcase / file / mysql / judge）
+```
+
+---
+
+### 2.5 端口对照
+
+| 服务 | 宿主端口 | 容器端口 | 说明 |
+|---|---|---|---|
+| 前端 Nginx | 8003 | 80 | 网站入口 |
+| 后端 API | 6688 | 6688 | DataBackend |
+| 判题机 | 8088 | 8088 | JudgeServer |
+| MySQL | 3391 | 3306 | |
+| Nacos | 8849 | 8848 | |
+| Redis | 6380 | 6379 | |
+
+---
+
+### 2.6 数据库迁移（重要）
+
+升级到含 PK / 私聊 / 作业功能的版本，需要执行两张增量脚本：
+- `sqlAndsetting/hoj-pk-chat-update.sql` —— PK 对战 + 私聊
+- `sqlAndsetting/hoj-assignment-update.sql` —— 作业功能（7 张新表 + judge 表加 aid 列）
+
+**迁移特点：**
+- **幂等**：脚本是 `CREATE TABLE IF NOT EXISTS` + 查 `information_schema` 的存储过程，重复执行也安全；
+- **只改结构、不碰数据**：迁移脚本带安全护栏，一旦含 `DROP TABLE` / `TRUNCATE` / `DELETE` / `INSERT` / `UPDATE` 会直接拒绝执行；
+- **自动执行**：场景 A 由 `deploy.sh` 自动应用，场景 B 由 `hoj-mysql-checker` 容器在 MySQL 就绪后自动应用；手动升级请按上面顺序依次 source。
+
+---
+
+### 2.7 常见问题
+
+| 现象 | 原因 | 处理 |
+|---|---|---|
+| 访问报 502，日志里 `connect() failed (111: Connection refused) while connecting to upstream http://127.0.0.1:8003` | 前端容器没起来（8003 无监听） | `docker compose ps -a` 看前端状态，`docker compose logs hoj-frontend` 看报错；常见是 build 失败或 8003 被占用 |
+| 提交全部 "Submitted Failed"，但每个测试点都 AC | Lombok ≥1.16.20 反序列化 bug（已修复） | 确认根目录 `lombok.config` 有 `lombok.anyConstructor.addConstructorProperties = true` |
+| 判题报 `test case has not found` | 题目测试数据文件丢失 | 见 `docs/作业功能设计.md` 与数据备份 |
+
+---
+
+### 附：官方部署方式（不含二开功能）
+
+如果只想跑原版 HOJ（不含 PK / 私聊 / 作业等二开功能），也可直接用官方 hoj-deploy 仓库：
+
+- 部署文档：[https://docs.hdoi.cn/deploy/docker](https://docs.hdoi.cn/deploy/docker)
+- 部署仓库：[https://gitee.com/himitzh0730/hoj-deploy](https://gitee.com/himitzh0730/hoj-deploy)
+
+> ⚠️ 官方 hoj-deploy 使用官方 Docker 镜像，**不包含**二开功能。要用二开版本，请走上面的场景 A / B。
 
 ---
 
@@ -191,7 +277,9 @@ export JUDGE_SERVER_JAR_NAME=hoj-judgeServer-4.6.jar # 判题 JAR 文件名
 - **管理端（后端 API）**：学生组管理（增删改查、添加/移除成员）、作业管理（增删改查、发布、延期）
 - **权限隔离**：root 全局可见、admin 仅见自己创建的作业、problem_admin 只读
 
-> 📌 **待做**：阶段 3 导航闪烁通知（未完成数轮询）、阶段 4 微信接口与家长绑定（详见 `docs/作业功能设计.md`）。
+> 📌 **已完成**：阶段 3 导航栏角标 + 未完成数闪烁通知（未完成数轮询接口 `/api/get-assignment-unfinished-count`）。
+>
+> 📌 **待做**：阶段 4 微信接口与家长绑定（详见 `docs/作业功能设计.md`）。
 
 > 📌 **提示**：升级到包含 PK、私聊、作业功能的版本需要执行数据库增量脚本 `sqlAndsetting/hoj-pk-chat-update.sql`（PK 对战 + 私聊）与 `sqlAndsetting/hoj-assignment-update.sql`（作业功能，新增 7 张表 + judge 表 aid 列）。使用 `deploy.sh` 部署时会自动应用；手动升级请自行按顺序执行。
 
@@ -266,6 +354,7 @@ HOJ/
 | 2026-06-18 | **新增 PK 对战功能**：1v1 实时编程对战，限时 20 分钟，积分排名系统   |  lzdogbro   |
 | 2026-09-02 | **题单/论坛重构**：训练改名题单（公开/私有、密码、分类），讨论区改名论坛（帖子、关联题目、举报），导航新增作业入口，私聊未读闪动优化 |  lzdogbro   |
 | 2026-09-03 | **作业功能**：学生组管理、作业发布/提交链路、AC 制完成判定（学生端前后端 + 管理端后端 API）；deploy.sh 支持多数据库迁移与 JudgeServer 热替换 |  lzdogbro   |
+| 2026-09-03 | **云端自包含部署**：build-cloud-bundle.sh 一键打包部署包，judgeserver/mysql-checker 纳入 compose 本地构建，数据库迁移只改结构不碰数据 |  lzdogbro   |
 
 ---
 

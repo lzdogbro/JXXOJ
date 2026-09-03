@@ -35,6 +35,16 @@ FRONTEND_DIR="${HOJ_ROOT}/hoj-vue"
 SCROLL_BOARD_DIR="${HOJ_ROOT}/hoj-scrollBoard"
 SQL_DIR="${HOJ_ROOT}/sqlAndsetting"
 
+# ---- Docker Compose 命令检测（优先 v2 的 docker compose 插件，兼容旧版 docker-compose）----
+if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    DOCKER_COMPOSE="docker compose"
+elif command -v docker-compose >/dev/null 2>&1; then
+    DOCKER_COMPOSE="docker-compose"
+else
+    log_error "未找到 Docker Compose（需要 docker compose 插件或 docker-compose 命令）"
+    exit 1
+fi
+
 # ---- 可配置版本号 ----
 BACKEND_JAR_NAME="${BACKEND_JAR_NAME:-hoj-backend-4.6.jar}"
 JUDGE_SERVER_JAR_NAME="${JUDGE_SERVER_JAR_NAME:-hoj-judgeServer-4.6.jar}"
@@ -96,7 +106,7 @@ init_deploy_dir() {
     mkdir -p "${D}/src/frontend/html"
     mkdir -p "${D}/src/frontend/scrollBoard"
     mkdir -p "${D}/src/mysql"
-    mkdir -p "${D}/src/mysql-checker"
+    mkdir -p "${D}/src/mysql-checker/migrations"
     mkdir -p "${D}/src/rsync"
     mkdir -p "${D}/src/judgeserver"
     mkdir -p "${D}/distributed/main"
@@ -370,7 +380,7 @@ EOF
     cat > "${D}/src/mysql-checker/Dockerfile" << 'DOCKERFILE_EOF'
 FROM arey/mysql-client
 
-COPY ./hoj-update.sql /sql/
+COPY ./migrations/ /sql/migrations/
 
 COPY ./update.sh /sql/
 
@@ -380,18 +390,20 @@ DOCKERFILE_EOF
     # ---- src/mysql-checker/update.sh ----
     cat > "${D}/src/mysql-checker/update.sh" << 'EOF'
 #!/bin/sh
+# 数据库表结构迁移：只改表结构（幂等 DDL），不碰数据
 
-mysql -h mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "select version();" &> /dev/null
-RETVAL=$?
-
-while [ $RETVAL -ne 0 ]
-do
-	sleep 3
-	mysql -h mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "select version();" &> /dev/null
-	RETVAL=$?
+# 等待 MySQL 就绪
+while ! mysql -h mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "select 1;" >/dev/null 2>&1; do
+  sleep 3
 done
-mysql -uroot -h mysql -p$MYSQL_ROOT_PASSWORD -D hoj -e "source /sql/hoj-update.sql"
-echo 'Check whether the `hoj` database has been updated successfully!'
+
+# 依次应用表结构迁移脚本（均幂等：CREATE TABLE IF NOT EXISTS / ALTER TABLE ADD COLUMN）
+for f in /sql/migrations/*.sql; do
+  echo "[migration] applying: $f"
+  mysql -h mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -D hoj -e "source $f"
+done
+
+echo '[migration] done'
 EOF
 
     # ---- src/rsync/Dockerfile ----
@@ -441,6 +453,14 @@ else
 	done
 fi
 EOF
+
+    # ---- src/judgeserver/Dockerfile ----
+    cat > "${D}/src/judgeserver/Dockerfile" << 'DOCKERFILE_EOF'
+# 基于远程 judgeserver 镜像，覆盖进本地构建的 app.jar（含作业功能等本地改动）
+FROM registry.cn-shenzhen.aliyuncs.com/hcode/hoj_judgeserver
+
+COPY app.jar /judge/server/app.jar
+DOCKERFILE_EOF
 
     # ---- standAlone/.env ----
     cat > "${D}/standAlone/.env" << 'EOF'
@@ -675,7 +695,10 @@ services:
         ipv4_address: 172.20.0.6
 
   hoj-judgeserver:
-    image: registry.cn-shenzhen.aliyuncs.com/hcode/hoj_judgeserver
+    build:
+      context: ../src/judgeserver
+      dockerfile: Dockerfile
+    image: myhoj/judgeserver:v2
     container_name: hoj-judgeserver
     restart: always
     depends_on:
@@ -717,7 +740,10 @@ services:
         ipv4_address: 172.20.0.7
 
   hoj-mysql-checker:
-    image: registry.cn-shenzhen.aliyuncs.com/hcode/hoj_database_checker
+    build:
+      context: ../src/mysql-checker
+      dockerfile: Dockerfile
+    image: myhoj/mysql-checker:v2
     container_name: hoj-mysql-checker
     depends_on:
       hoj-mysql:
@@ -902,7 +928,10 @@ services:
       - "0.0.0.0:873:873"
 
   hoj-mysql-checker:
-    image: registry.cn-shenzhen.aliyuncs.com/hcode/hoj_database_checker
+    build:
+      context: ../../src/mysql-checker
+      dockerfile: Dockerfile
+    image: myhoj/mysql-checker:v2
     container_name: hoj-mysql-checker
     depends_on:
       - hoj-mysql
@@ -977,7 +1006,10 @@ version: "3"
 services:
 
   hoj-judgeserver:
-    image: registry.cn-shenzhen.aliyuncs.com/hcode/hoj_judgeserver
+    build:
+      context: ../../src/judgeserver
+      dockerfile: Dockerfile
+    image: myhoj/judgeserver:v2
     container_name: hoj-judgeserver
     restart: always
     volumes:
@@ -1103,7 +1135,16 @@ sync_artifacts() {
         exit 1
     fi
 
-    # 2. 复制前端 dist
+    # 2. 复制 JudgeServer JAR（重命名为 app.jar，供 src/judgeserver/Dockerfile COPY）
+    local judge_jar_src="${BACKEND_DIR}/JudgeServer/target/${JUDGE_SERVER_JAR_NAME}"
+    if [ -f "${judge_jar_src}" ]; then
+        cp "${judge_jar_src}" "${D}/src/judgeserver/app.jar"
+        log_info "已复制 JudgeServer JAR: ${JUDGE_SERVER_JAR_NAME} → src/judgeserver/app.jar"
+    else
+        log_warn "JudgeServer JAR 不存在: ${judge_jar_src}，跳过（沿用远程镜像原版 JAR）"
+    fi
+
+    # 3. 复制前端 dist
     local dist_src="${FRONTEND_DIR}/dist"
     if [ -d "${dist_src}" ]; then
         rm -rf "${D}/src/frontend/html/"*
@@ -1113,7 +1154,7 @@ sync_artifacts() {
         log_warn "前端 dist 不存在: ${dist_src}，跳过"
     fi
 
-    # 3. 复制滚榜页面
+    # 4. 复制滚榜页面
     if [ -d "${SCROLL_BOARD_DIR}" ]; then
         rm -rf "${D}/src/frontend/scrollBoard/"*
         cp -r "${SCROLL_BOARD_DIR}"/* "${D}/src/frontend/scrollBoard/"
@@ -1122,13 +1163,27 @@ sync_artifacts() {
         log_warn "滚榜目录不存在，跳过"
     fi
 
-    # 4. 复制 SQL 文件
+    # 5. 复制 SQL 文件
     if [ -f "${SQL_DIR}/hoj.sql" ]; then
         cp "${SQL_DIR}/hoj.sql" "${D}/src/mysql/"
         log_info "已复制 hoj.sql → src/mysql/"
     else
         log_warn "hoj.sql 不存在，跳过"
     fi
+
+    # 6. 复制数据库迁移脚本（表结构 DDL，供 src/mysql-checker 容器应用）
+    local migrations_dst="${D}/src/mysql-checker/migrations"
+    rm -rf "${migrations_dst}"
+    mkdir -p "${migrations_dst}"
+    local migration_sql
+    for migration_sql in "${SQL_DIR}/hoj-pk-chat-update.sql" "${SQL_DIR}/hoj-assignment-update.sql"; do
+        if [ -f "${migration_sql}" ]; then
+            cp "${migration_sql}" "${migrations_dst}/"
+            log_info "已复制迁移脚本: $(basename "${migration_sql}") → src/mysql-checker/migrations/"
+        else
+            log_warn "迁移脚本不存在，跳过: ${migration_sql}"
+        fi
+    done
 
     log_info "构建产物同步完成!"
 }
@@ -1161,6 +1216,15 @@ apply_database_migrations() {
             log_warn "数据库增量脚本不存在，跳过: ${migration_file}"
             continue
         fi
+
+        # 安全护栏：迁移只允许表结构 DDL（CREATE/ALTER/DROP PROCEDURE），
+        # 禁止任何会改动或清空数据的语句（DROP TABLE / TRUNCATE / DELETE / INSERT / UPDATE ... SET）。
+        # 不碰业务数据，只更新表结构。
+        if grep -qiE 'DROP[[:space:]]+TABLE|TRUNCATE[[:space:]]+TABLE|DELETE[[:space:]]+FROM|INSERT[[:space:]]+INTO|UPDATE[[:space:]]+[A-Za-z_`]+[[:space:]]+SET' "${migration_file}"; then
+            log_error "数据库增量脚本含数据操作语句，已拒绝执行（只允许表结构 DDL）: ${migration_file}"
+            exit 1
+        fi
+
         log_step "应用数据库增量: $(basename "${migration_file}")..."
         docker exec -i "${mysql_container}" sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" hoj' < "${migration_file}"
         log_info "$(basename "${migration_file}") 已应用"
@@ -1206,14 +1270,13 @@ docker_up() {
 
     # 停止现有容器
     log_info "停止现有容器..."
-    docker-compose down 2>/dev/null || true
+    $DOCKER_COMPOSE down 2>/dev/null || true
 
     # 重新构建并启动
     log_info "构建镜像并启动容器..."
-    docker-compose up -d --build
+    $DOCKER_COMPOSE up -d --build
 
     apply_database_migrations
-    deploy_judgeserver
 
     log_info "Docker 容器启动完成!"
     echo ""
@@ -1229,7 +1292,7 @@ docker_up() {
 docker_down() {
     log_step "停止 Docker 容器..."
     cd "${MYHOJ_DEPLOY_DIR}/standAlone"
-    docker-compose down
+    $DOCKER_COMPOSE down
     log_info "所有容器已停止"
 }
 
@@ -1250,6 +1313,7 @@ show_usage() {
     echo "  deploy      完整流程: build → init(如需) → sync → up"
     echo "  restart     重启容器（down + up，含重新构建）"
     echo "  status      查看容器运行状态"
+    echo "  judgeserver 仅热替换 JudgeServer JAR 到运行中的容器（无需重建镜像）"
     echo ""
     echo "环境变量:"
     echo "  MYHOJ_DEPLOY_DIR    myhoj-deploy 目录路径（默认: ../myhoj-deploy）"
@@ -1260,7 +1324,7 @@ show_usage() {
 show_status() {
     cd "${MYHOJ_DEPLOY_DIR}/standAlone" 2>/dev/null || return
     echo "========== Docker 容器状态 =========="
-    docker-compose ps 2>/dev/null || echo "无法获取容器状态"
+    $DOCKER_COMPOSE ps 2>/dev/null || echo "无法获取容器状态"
     echo ""
     echo "========== 端口监听 =========="
     ss -tlnp 2>/dev/null | grep -E '6688|8003|3391|6380|8849' || echo "无相关端口监听"
@@ -1293,6 +1357,9 @@ case "$COMMAND" in
         ;;
     status)
         show_status
+        ;;
+    judgeserver)
+        deploy_judgeserver
         ;;
     deploy)
         echo "========================================"
