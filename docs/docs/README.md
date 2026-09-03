@@ -5,7 +5,7 @@ heroText:  HOJ
 tagline: 基于分布式、前后端分离的高性能在线评测系统
 action:
   - text: 文档介绍 🔔
-    link: /introducition/
+    link: /introduction/
     type: primary
   - text: 快速部署
     link: /deploy/docker/

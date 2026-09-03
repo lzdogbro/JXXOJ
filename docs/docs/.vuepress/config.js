@@ -1,4 +1,3 @@
-const path = require('path');
 const { config } = require("vuepress-theme-hope");
 
 module.exports = context => config({
@@ -14,7 +13,7 @@ module.exports = context => config({
         'vuepress-plugin-smooth-scroll',
         'vuepress-plugin-zooming'
     ],
-    base:'/',
+    base: '/',
     themeConfig: {
         logo: '/favicon.ico',
         nav: [
@@ -38,7 +37,7 @@ module.exports = context => config({
         },
         docsRepo: 'HimitZH/HOJ',
         docsBranch: 'master',
-        docsDir:'docs/docs',
+        docsDir: 'docs/docs',
         editLinks: true,
         displayAllHeaders: true,
         smoothScroll: true,
@@ -47,68 +46,74 @@ module.exports = context => config({
                 title: '开始介绍',
                 collapsable: true,
                 children: [
-                    'introducition/',
-					'introducition/architecture'
+                    'introduction/',
+                    'introduction/architecture'
                 ]
             },
-			{
+            {
                 title: '快速部署',
                 collapsable: true,
                 children: [
                     'deploy/env',
-					'deploy/docker',
-					'deploy/setting',
-					'deploy/open-https',
-					'deploy/multi-judgeserver',
-					'deploy/update',
-					'deploy/how-to-backup',
-					'deploy/faq'
+                    'deploy/docker',
+                    'deploy/setting',
+                    'deploy/open-https',
+                    'deploy/multi-judgeserver',
+                    'deploy/update',
+                    'deploy/how-to-backup',
+                    'deploy/faq'
                 ]
             },
-			{
+            {
                 title: '单体部署',
                 collapsable: true,
                 children: [
                     'monomer/mysql',
-					'monomer/mysql-checker',
-					'monomer/redis',
-					'monomer/nacos',
+                    'monomer/mysql-checker',
+                    'monomer/redis',
+                    'monomer/nacos',
                     'monomer/backend',
                     'monomer/judgeserver',
-					'monomer/frontend',
+                    'monomer/frontend',
                     'monomer/rsync'
                 ]
             },
-			{
+            {
                 title: '开发文档',
                 collapsable: true,
                 children: [
+                    'develop/backend',
                     'develop/db',
-					'develop/judge_dispatcher',
-					'develop/sandbox',
-					'develop/backend'
+                    'develop/judge_dispatcher',
+                    'develop/sandbox'
                 ]
             },
-			{
+            {
                 title: '使用文档',
                 collapsable: true,
                 children: [
-					'use/import-problem',
-					'use/judge-mode',
-					'use/judge-case-mode',
-					'use/cancel-judge',
-					'use/testcase',
-					'use/training',
-					'use/contest',
-					'use/scroll-board',
-					'use/group',
-					'use/import-user',
-					'use/admin-user',
-					'use/notice-announcement',
-					'use/discussion-admin',
-					'use/update-fe',
-					'use/custom-difficulty',
-					'use/close-free-cdn'
+                    // 题目与评测
+                    'use/import-problem',
+                    'use/testcase',
+                    'use/judge-mode',
+                    'use/judge-case-mode',
+                    'use/cancel-judge',
+                    'use/custom-difficulty',
+                    // 比赛
+                    'use/contest',
+                    'use/scroll-board',
+                    // 训练与团队
+                    'use/training',
+                    'use/group',
+                    // 讨论与通知
+                    'use/discussion-admin',
+                    'use/notice-announcement',
+                    // 用户管理
+                    'use/import-user',
+                    'use/admin-user',
+                    // 前端自定义
+                    'use/update-fe',
+                    'use/close-free-cdn'
                 ]
             },
         ],
