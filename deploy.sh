@@ -51,6 +51,46 @@ JUDGE_SERVER_JAR_NAME="${JUDGE_SERVER_JAR_NAME:-hoj-judgeServer-4.6.jar}"
 JUDGE_SERVER_CONTAINER_NAME="${JUDGE_SERVER_CONTAINER_NAME:-hoj-judgeserver}"
 
 # =============================================================================
+# 环境依赖检查（新机器首次构建前校验，给出友好安装提示）
+# =============================================================================
+
+check_environment() {
+    local missing=0
+
+    if command -v node >/dev/null 2>&1; then
+        log_info "Node.js: $(node -v)"
+    else
+        log_error "未找到 Node.js —— 前端构建需要它。"
+        log_error "  安装方法（任选其一）："
+        log_error "    • Ubuntu/Debian: sudo apt install -y nodejs npm"
+        log_error "    • nvm: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash"
+        log_error "    • 官网: https://nodejs.org （建议 16 或更高 LTS）"
+        missing=1
+    fi
+
+    if command -v npm >/dev/null 2>&1; then
+        log_info "npm: $(npm -v)"
+    else
+        log_error "未找到 npm —— 前端依赖安装需要它（通常随 Node.js 一起安装）。"
+        missing=1
+    fi
+
+    if command -v mvn >/dev/null 2>&1; then
+        log_info "Maven: $(mvn -v 2>/dev/null | head -1)"
+    else
+        log_error "未找到 Maven —— 后端 JAR 构建需要它。"
+        log_error "  安装方法：sudo apt install -y maven （或 https://maven.apache.org/download.cgi）"
+        missing=1
+    fi
+
+    if [ "$missing" -ne 0 ]; then
+        echo ""
+        log_error "检测到缺少上述依赖，无法继续构建。请先安装后再重试 './deploy.sh build'。"
+        exit 1
+    fi
+}
+
+# =============================================================================
 # 构建函数
 # =============================================================================
 
@@ -70,9 +110,31 @@ build_backend() {
 build_frontend() {
     log_step "构建前端 dist..."
     cd "${FRONTEND_DIR}"
+
+    if [ ! -f "package.json" ]; then
+        log_error "未找到 ${FRONTEND_DIR}/package.json，前端目录不完整，无法构建。"
+        exit 1
+    fi
+
+    # 前端依赖未安装（node_modules 缺失）时自动 npm install，避免报 vue-cli-service: not found
+    if [ ! -x "node_modules/.bin/vue-cli-service" ]; then
+        log_warn "未检测到前端依赖（node_modules 缺失），这是新机器常见的报错 'vue-cli-service: not found' 的根因。"
+        log_info "正在安装前端依赖：npm install（首次安装可能需要几分钟，请耐心等待）..."
+        if ! npm install; then
+            echo ""
+            log_error "前端依赖安装失败。请手动执行后重试："
+            log_error "  cd ${FRONTEND_DIR}"
+            log_error "  npm install"
+            log_error "  （若网络受限，可改用国内镜像：npm install --registry=https://registry.npmmirror.com）"
+            exit 1
+        fi
+        log_info "前端依赖安装完成。"
+    fi
+
     local node_major
     node_major="$(node -p 'process.versions.node.split(".")[0]')"
     if [ "${node_major}" -ge 17 ]; then
+        log_info "Node >= 17，使用 --openssl-legacy-provider 兼容旧版 webpack"
         NODE_OPTIONS=--openssl-legacy-provider npm run build
     else
         npm run build
@@ -1368,6 +1430,7 @@ COMMAND="${1:-deploy}"
 
 case "$COMMAND" in
     build)
+        check_environment
         build_backend
         build_frontend
         log_info "构建完成! 接下来可运行 './deploy.sh sync' 同步到 myhoj-deploy"
@@ -1402,6 +1465,7 @@ case "$COMMAND" in
         echo ""
 
         # 1. 构建
+        check_environment
         build_backend
         build_frontend
 
