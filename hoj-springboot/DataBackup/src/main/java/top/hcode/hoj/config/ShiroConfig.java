@@ -17,9 +17,12 @@ import top.hcode.hoj.shiro.AccountRealm;
 import top.hcode.hoj.shiro.JwtFilter;
 import top.hcode.hoj.shiro.ShiroCacheManager;
 import top.hcode.hoj.shiro.ShiroConstant;
+import top.hcode.hoj.shiro.WechatJwtFilter;
+import top.hcode.hoj.shiro.WechatRealm;
 import top.hcode.hoj.utils.RedisUtils;
 
 import javax.servlet.Filter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -36,14 +39,18 @@ public class ShiroConfig {
     private JwtFilter jwtFilter;
 
     @Autowired
+    private WechatJwtFilter wechatJwtFilter;
+
+    @Autowired
     private RedisUtils redisUtils;
 
     @Value("${hoj.jwt.expire:86400}")
     private long expire;
 
     @Bean
-    public DefaultWebSecurityManager securityManager(AccountRealm accountRealm) {
-        DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager(accountRealm);
+    public DefaultWebSecurityManager securityManager(AccountRealm accountRealm, WechatRealm wechatRealm) {
+        DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
+        securityManager.setRealms(Arrays.asList(accountRealm, wechatRealm));
 
         ShiroCacheManager shiroCacheManager = new ShiroCacheManager();
         shiroCacheManager.setCacheLive(expire);
@@ -65,6 +72,11 @@ public class ShiroConfig {
     public ShiroFilterChainDefinition shiroFilterChainDefinition() {
         DefaultShiroFilterChainDefinition chainDefinition = new DefaultShiroFilterChainDefinition();
         Map<String, String> filterMap = new LinkedHashMap<>();
+        // 微信侧：登录匿名；小程序码图片接口匿名；生成绑定码走平台 JWT（排在 /api/wechat/** 之前）；其余走微信 JWT
+        filterMap.put("/api/wechat/login", "anon");
+        filterMap.put("/api/wechat/qrcode/**", "anon");
+        filterMap.put("/api/wechat/bind-code", "jwt");
+        filterMap.put("/api/wechat/**", "wechatJwt");
         filterMap.put("/**", "jwt"); // 主要通过注解方式校验权限
         chainDefinition.addPathDefinitions(filterMap);
         return chainDefinition;
@@ -77,6 +89,7 @@ public class ShiroConfig {
         shiroFilter.setSecurityManager(securityManager);
         Map<String, Filter> filters = new HashMap<>();
         filters.put("jwt", jwtFilter);
+        filters.put("wechatJwt", wechatJwtFilter);
         shiroFilter.setFilters(filters);
         Map<String, String> filterMap = shiroFilterChainDefinition.getFilterChainMap();
         shiroFilter.setFilterChainDefinitionMap(filterMap);

@@ -94,6 +94,7 @@ cat <<EOF
     - JWT_TOKEN_SECRET / JUDGE_TOKEN      （改为随机密钥）
     - MYSQL_ROOT_PASSWORD / REDIS_PASSWORD / NACOS_PASSWORD（改为真实密码）
     - EMAIL_USERNAME / EMAIL_PASSWORD     （如需邮件）
+    - WECHAT_APPID / WECHAT_SECRET / WECHAT_TMPL_PUBLISH / WECHAT_TMPL_DONE（微信小程序，上线前填真实值）
 
   云端部署步骤:
     1. 上传部署包到云端（${DO_TAR:+tarball: ${TARBALL}}）

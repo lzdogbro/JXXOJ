@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 import top.hcode.hoj.pojo.entity.assignment.AssignmentStudent;
 import top.hcode.hoj.pojo.vo.AssignmentStudentVO;
+import top.hcode.hoj.pojo.vo.WechatSubmitVO;
 
 import java.util.List;
 
@@ -23,4 +24,6 @@ public interface AssignmentStudentMapper extends BaseMapper<AssignmentStudent> {
     int countProblemByAid(@Param("aid") Long aid);
 
     List<Long> getAcceptedPidsByAidUid(@Param("aid") Long aid, @Param("uid") String uid, @Param("acceptedStatus") int acceptedStatus);
+
+    List<WechatSubmitVO> getSubmittedPidsByAidUid(@Param("aid") Long aid, @Param("uid") String uid);
 }

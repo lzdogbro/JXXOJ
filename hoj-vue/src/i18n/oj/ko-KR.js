@@ -196,6 +196,13 @@ export const m = {
   // /views/oj/user/Setting.vue
   Account_Setting: '계정 설정',
   UserInfo_Setting: '프로필 설정',
+  Parent_Binding: '부모 바인딩',
+  Generate_Bind_Code: '부모 바인딩 코드 생성',
+  Regenerate: '다시 생성',
+  Bind_Code_Description: 'WeChat으로 스캔하거나 미니 프로그램에 이 코드를 입력하면 부모가 계정을 바인딩할 수 있습니다.',
+  Bind_Code_Expire_In: '유효 기간',
+  Bind_Code_Scan_Tip: '스캔하여 자동 바인딩',
+  Bind_Code_Expired: '바인딩 코드가 만료되었습니다. 다시 생성하세요',
 
   // App.vue 푸터 텍스트
   Service: '서비스',

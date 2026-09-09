@@ -50,6 +50,32 @@ public class JwtUtils {
         return token;
     }
 
+    /**
+     * 生成微信登录态的 jwt token（subject = openid，Redis 前缀与平台隔离）
+     */
+    public String generateWechatToken(String openid) {
+        Date nowDate = new Date();
+        Date expireDate = new Date(nowDate.getTime() + expire * 1000);
+
+        String token = Jwts.builder()
+                .setHeaderParam("type", "JWT")
+                .setSubject(openid)
+                .setIssuedAt(nowDate)
+                .setExpiration(expireDate)
+                .signWith(SignatureAlgorithm.HS512, secret)
+                .compact();
+        redisUtils.set(ShiroConstant.WECHAT_TOKEN_KEY + openid, token, expire);
+        return token;
+    }
+
+    public boolean hasWechatToken(String openid) {
+        return redisUtils.hasKey(ShiroConstant.WECHAT_TOKEN_KEY + openid);
+    }
+
+    public void cleanWechatToken(String openid) {
+        redisUtils.del(ShiroConstant.WECHAT_TOKEN_KEY + openid);
+    }
+
     public Claims getClaimByToken(String token) {
         try {
             return Jwts.parser()

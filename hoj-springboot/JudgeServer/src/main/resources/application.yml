@@ -52,3 +52,11 @@ management:
     web:
       exposure:
         include: info,health
+
+# 微信小程序配置（判题服务侧完成通知用，从环境变量注入）
+hoj:
+  wechat:
+    appid: ${WECHAT_APPID:}
+    secret: ${WECHAT_SECRET:}
+    template-publish: ${WECHAT_TMPL_PUBLISH:}
+    template-done: ${WECHAT_TMPL_DONE:}

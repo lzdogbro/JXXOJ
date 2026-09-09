@@ -23,7 +23,7 @@
           </el-col>
           <el-col :md="8" :xs="24">
             <el-form-item :label="$t('m.Assignment_Status')">
-              <el-radio-group v-model="form.isRequired" :disabled="isPublished">
+              <el-radio-group v-model="form.isRequired">
                 <el-radio :label="1">{{ $t('m.Assignment_Required') }}</el-radio>
                 <el-radio :label="0">{{ $t('m.Assignment_Optional') }}</el-radio>
               </el-radio-group>
@@ -34,7 +34,6 @@
               <el-date-picker
                 v-model="form.startTime"
                 type="datetime"
-                :disabled="isPublished"
                 style="width:100%"
                 :placeholder="$t('m.Assignment_Start_Time')"
               ></el-date-picker>
@@ -45,7 +44,6 @@
               <el-date-picker
                 v-model="form.endTime"
                 type="datetime"
-                :disabled="isPublished"
                 style="width:100%"
                 :placeholder="$t('m.Assignment_Deadline')"
               ></el-date-picker>
@@ -58,7 +56,6 @@
                   type="primary"
                   size="small"
                   icon="el-icon-plus"
-                  :disabled="isPublished"
                   @click="pickerVisible = true"
                   >{{ $t('m.Assignment_Add_Problem') }}
                 </el-button>
@@ -78,7 +75,6 @@
                     <el-input
                       v-model="row.displayId"
                       size="mini"
-                      :disabled="isPublished"
                     ></el-input>
                   </template>
                 </vxe-table-column>
@@ -113,7 +109,6 @@
                       icon="el-icon-delete"
                       size="mini"
                       type="danger"
-                      :disabled="isPublished"
                       @click.native="removeProblem(row)"
                     ></el-button>
                   </template>
@@ -129,6 +124,7 @@
                   multiple
                   style="width:100%"
                   :placeholder="$t('m.Assignment_Student_Group')"
+                  @change="loadExcludeOptions"
                 >
                   <el-option
                     v-for="group in groupList"
@@ -153,6 +149,24 @@
                 >
                   <el-option
                     v-for="u in extraUserOptions"
+                    :key="u.uid"
+                    :label="u.username"
+                    :value="u.uid"
+                  ></el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :md="12" :xs="24">
+              <el-form-item :label="$t('m.Assignment_Exclude_User')">
+                <el-select
+                  v-model="excludeUidList"
+                  multiple
+                  filterable
+                  style="width:100%"
+                  :placeholder="$t('m.Assignment_Exclude_User_Placeholder')"
+                >
+                  <el-option
+                    v-for="u in excludeUserOptions"
                     :key="u.uid"
                     :label="u.username"
                     :value="u.uid"
@@ -219,9 +233,11 @@ export default {
       problemList: [],
       groupIdList: [],
       extraUidList: [],
+      excludeUidList: [],
       groupList: [],
       extraUserOptions: [],
       extraUserLoading: false,
+      excludeUserOptions: [],
       pickerVisible: false,
       isPublished: false,
     };
@@ -270,7 +286,9 @@ export default {
       this.problemList = [];
       this.groupIdList = [];
       this.extraUidList = [];
+      this.excludeUidList = [];
       this.extraUserOptions = [];
+      this.excludeUserOptions = [];
       this.isPublished = false;
       this.pickerVisible = false;
     },
@@ -369,6 +387,29 @@ export default {
         }
       );
     },
+    loadExcludeOptions() {
+      if (!this.groupIdList || this.groupIdList.length === 0) {
+        this.excludeUserOptions = [];
+        this.excludeUidList = [];
+        return;
+      }
+      let tasks = this.groupIdList.map((gid) => api.admin_getStudentGroupUserList(gid));
+      Promise.all(tasks)
+        .then((results) => {
+          let map = new Map();
+          results.forEach((res) => {
+            (res.data.data || []).forEach((u) => {
+              if (!map.has(u.uid)) {
+                map.set(u.uid, { uid: u.uid, username: u.username });
+              }
+            });
+          });
+          this.excludeUserOptions = Array.from(map.values());
+          let validUids = new Set(this.excludeUserOptions.map((u) => u.uid));
+          this.excludeUidList = this.excludeUidList.filter((uid) => validUids.has(uid));
+        })
+        .catch(() => {});
+    },
     validateForm(publish) {
       if (!this.form.title) {
         myMessage.error(this.$i18n.t('m.Title') + ' ' + this.$i18n.t('m.is_required'));
@@ -422,13 +463,9 @@ export default {
         return;
       }
       if (this.isPublished) {
-        // 已发布仅可改标题/说明
+        // 已发布：整体保存（标题/说明/必做状态/时间窗/题目集均可修改，不改变发布状态）
         api
-          .admin_updateAssignment({
-            id: this.form.id,
-            title: this.form.title,
-            description: this.form.description,
-          })
+          .admin_updateAssignment(this.buildPayload())
           .then((res) => {
             myMessage.success(this.$i18n.t('m.Update_Successfully'));
             this.goList();
@@ -446,6 +483,7 @@ export default {
         payload.status = 1;
         payload.groupIdList = this.groupIdList;
         payload.extraUidList = this.extraUidList;
+        payload.excludeUidList = this.excludeUidList;
         api[func](payload)
           .then((res) => {
             myMessage.success(this.$i18n.t('m.Assignment_Publish'));
@@ -461,6 +499,7 @@ export default {
               id: this.form.id,
               groupIdList: this.groupIdList,
               extraUidList: this.extraUidList,
+              excludeUidList: this.excludeUidList,
             });
           })
           .then((res) => {

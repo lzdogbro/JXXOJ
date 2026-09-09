@@ -182,6 +182,7 @@
             multiple
             style="width:100%"
             :placeholder="$t('m.Assignment_Student_Group')"
+            @change="loadExcludeOptions"
           >
             <el-option
               v-for="group in groupList"
@@ -204,6 +205,22 @@
           >
             <el-option
               v-for="u in extraUserOptions"
+              :key="u.uid"
+              :label="u.username"
+              :value="u.uid"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item :label="$t('m.Assignment_Exclude_User')">
+          <el-select
+            v-model="publishForm.excludeUidList"
+            multiple
+            filterable
+            style="width:100%"
+            :placeholder="$t('m.Assignment_Exclude_User_Placeholder')"
+          >
+            <el-option
+              v-for="u in excludeUserOptions"
               :key="u.uid"
               :label="u.username"
               :value="u.uid"
@@ -320,10 +337,12 @@ export default {
         id: null,
         groupIdList: [],
         extraUidList: [],
+        excludeUidList: [],
       },
       groupList: [],
       extraUserOptions: [],
       extraUserLoading: false,
+      excludeUserOptions: [],
       extendDialogVisible: false,
       extendLoading: false,
       extendForm: {
@@ -397,8 +416,10 @@ export default {
         id: row.id,
         groupIdList: [],
         extraUidList: [],
+        excludeUidList: [],
       };
       this.extraUserOptions = [];
+      this.excludeUserOptions = [];
       this.publishDialogVisible = true;
       this.getGroupList();
     },
@@ -423,6 +444,33 @@ export default {
         }
       );
     },
+    loadExcludeOptions() {
+      if (!this.publishForm.groupIdList || this.publishForm.groupIdList.length === 0) {
+        this.excludeUserOptions = [];
+        this.publishForm.excludeUidList = [];
+        return;
+      }
+      let tasks = this.publishForm.groupIdList.map((gid) =>
+        api.admin_getStudentGroupUserList(gid)
+      );
+      Promise.all(tasks)
+        .then((results) => {
+          let map = new Map();
+          results.forEach((res) => {
+            (res.data.data || []).forEach((u) => {
+              if (!map.has(u.uid)) {
+                map.set(u.uid, { uid: u.uid, username: u.username });
+              }
+            });
+          });
+          this.excludeUserOptions = Array.from(map.values());
+          let validUids = new Set(this.excludeUserOptions.map((u) => u.uid));
+          this.publishForm.excludeUidList = this.publishForm.excludeUidList.filter((uid) =>
+            validUids.has(uid)
+          );
+        })
+        .catch(() => {});
+    },
     confirmPublish() {
       if (
         (!this.publishForm.groupIdList || this.publishForm.groupIdList.length === 0) &&
@@ -437,6 +485,7 @@ export default {
           id: this.publishForm.id,
           groupIdList: this.publishForm.groupIdList,
           extraUidList: this.publishForm.extraUidList,
+          excludeUidList: this.publishForm.excludeUidList,
         })
         .then((res) => {
           this.publishLoading = false;

@@ -39,6 +39,11 @@ public class AssignmentDTO {
     private List<String> extraUidList;
 
     /**
+     * 从学生组/追加名单中排除的学生uid列表（这些学生不布置该作业）
+     */
+    private List<String> excludeUidList;
+
+    /**
      * 作业题目列表
      */
     private List<AssignmentProblem> problemList;

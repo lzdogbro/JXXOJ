@@ -197,6 +197,13 @@ export const m = {
 
   // /views/oj/user/Setting.vue
   Account_Setting: 'Account Setting',
+  Parent_Binding: 'Parent Binding',
+  Generate_Bind_Code: 'Generate Parent Bind Code',
+  Regenerate: 'Regenerate',
+  Bind_Code_Description: 'Scan with WeChat, or enter this code in the mini-program, to let a parent bind your account.',
+  Bind_Code_Expire_In: 'Expires In',
+  Bind_Code_Scan_Tip: 'Scan to bind',
+  Bind_Code_Expired: 'Bind code expired, please regenerate',
 
   // App.vue 底部文案
   Service: 'Service',

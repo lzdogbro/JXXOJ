@@ -534,6 +534,12 @@ REMOTE_JUDGE_MAX_TASK_NUM=-1
 # 默认沙盒并行判题程序数为cpu核心数
 PARALLEL_TASK=default
 
+# 微信小程序配置（appid/secret/订阅模板id，上线前填真实值）
+WECHAT_APPID=
+WECHAT_SECRET=
+WECHAT_TMPL_PUBLISH=
+WECHAT_TMPL_DONE=
+
 # docker network的配置
 SUBNET=172.20.0.0/16
 EOF
@@ -669,6 +675,10 @@ services:
       - LIBRE_ACCOUNT_USERNAME_LIST=${LIBRE_ACCOUNT_USERNAME_LIST}
       - LIBRE_ACCOUNT_PASSWORD_LIST=${LIBRE_ACCOUNT_PASSWORD_LIST}
       - FORCED_UPDATE_REMOTE_JUDGE_ACCOUNT=${FORCED_UPDATE_REMOTE_JUDGE_ACCOUNT:-false}
+      - WECHAT_APPID=${WECHAT_APPID:-}
+      - WECHAT_SECRET=${WECHAT_SECRET:-}
+      - WECHAT_TMPL_PUBLISH=${WECHAT_TMPL_PUBLISH:-}
+      - WECHAT_TMPL_DONE=${WECHAT_TMPL_DONE:-}
     ports:
       - ${BACKEND_PORT:-6688}:${BACKEND_PORT:-6688}
     networks:
@@ -726,6 +736,10 @@ services:
       - REMOTE_JUDGE_OPEN=${REMOTE_JUDGE_OPEN:-true}
       - REMOTE_JUDGE_MAX_TASK_NUM=${REMOTE_JUDGE_MAX_TASK_NUM:--1}
       - PARALLEL_TASK=${PARALLEL_TASK:-default}
+      - WECHAT_APPID=${WECHAT_APPID:-}
+      - WECHAT_SECRET=${WECHAT_SECRET:-}
+      - WECHAT_TMPL_PUBLISH=${WECHAT_TMPL_PUBLISH:-}
+      - WECHAT_TMPL_DONE=${WECHAT_TMPL_DONE:-}
     ports:
       - ${JUDGE_SERVER_PORT:-8088}:${JUDGE_SERVER_PORT:-8088}
     healthcheck:
@@ -890,6 +904,10 @@ services:
       - LIBRE_ACCOUNT_USERNAME_LIST=${LIBRE_ACCOUNT_USERNAME_LIST}
       - LIBRE_ACCOUNT_PASSWORD_LIST=${LIBRE_ACCOUNT_PASSWORD_LIST}
       - FORCED_UPDATE_REMOTE_JUDGE_ACCOUNT=${FORCED_UPDATE_REMOTE_JUDGE_ACCOUNT:-false}
+      - WECHAT_APPID=${WECHAT_APPID:-}
+      - WECHAT_SECRET=${WECHAT_SECRET:-}
+      - WECHAT_TMPL_PUBLISH=${WECHAT_TMPL_PUBLISH:-}
+      - WECHAT_TMPL_DONE=${WECHAT_TMPL_DONE:-}
     ports:
       - ${BACKEND_PORT:-6688}:${BACKEND_PORT:-6688}
     networks:
@@ -996,6 +1014,11 @@ SPOJ_ACCOUNT_PASSWORD_LIST=
 LIBRE_ACCOUNT_USERNAME_LIST=
 LIBRE_ACCOUNT_PASSWORD_LIST=
 FORCED_UPDATE_REMOTE_JUDGE_ACCOUNT=false
+# 微信小程序配置（appid/secret/订阅模板id，上线前填真实值）
+WECHAT_APPID=
+WECHAT_SECRET=
+WECHAT_TMPL_PUBLISH=
+WECHAT_TMPL_DONE=
 RSYNC_PASSWORD=hoj123456
 SUBNET=172.20.0.0/16
 EOF
@@ -1031,6 +1054,10 @@ services:
       - REMOTE_JUDGE_OPEN=${REMOTE_JUDGE_OPEN:-true}
       - REMOTE_JUDGE_MAX_TASK_NUM=${REMOTE_JUDGE_MAX_TASK_NUM:--1}
       - PARALLEL_TASK=${PARALLEL_TASK:-default}
+      - WECHAT_APPID=${WECHAT_APPID:-}
+      - WECHAT_SECRET=${WECHAT_SECRET:-}
+      - WECHAT_TMPL_PUBLISH=${WECHAT_TMPL_PUBLISH:-}
+      - WECHAT_TMPL_DONE=${WECHAT_TMPL_DONE:-}
     ports:
       - ${JUDGE_SERVER_PORT:-8088}:${JUDGE_SERVER_PORT:-8088}
     healthcheck:
@@ -1071,6 +1098,11 @@ MAX_TASK_NUM=-1
 REMOTE_JUDGE_OPEN=true
 REMOTE_JUDGE_MAX_TASK_NUM=-1
 PARALLEL_TASK=default
+# 微信小程序配置（appid/secret/订阅模板id，上线前填真实值）
+WECHAT_APPID=
+WECHAT_SECRET=
+WECHAT_TMPL_PUBLISH=
+WECHAT_TMPL_DONE=
 RSYNC_MASTER_ADDR=127.0.0.1
 RSYNC_PASSWORD=hoj123456
 EOF
@@ -1176,7 +1208,7 @@ sync_artifacts() {
     rm -rf "${migrations_dst}"
     mkdir -p "${migrations_dst}"
     local migration_sql
-    for migration_sql in "${SQL_DIR}/hoj-pk-chat-update.sql" "${SQL_DIR}/hoj-assignment-update.sql"; do
+    for migration_sql in "${SQL_DIR}/hoj-pk-chat-update.sql" "${SQL_DIR}/hoj-assignment-update.sql" "${SQL_DIR}/hoj-wechat-update.sql"; do
         if [ -f "${migration_sql}" ]; then
             cp "${migration_sql}" "${migrations_dst}/"
             log_info "已复制迁移脚本: $(basename "${migration_sql}") → src/mysql-checker/migrations/"
@@ -1193,6 +1225,7 @@ apply_database_migrations() {
     local migration_files=(
         "${SQL_DIR}/hoj-pk-chat-update.sql"
         "${SQL_DIR}/hoj-assignment-update.sql"
+        "${SQL_DIR}/hoj-wechat-update.sql"
     )
     local mysql_container="${MYSQL_CONTAINER_NAME:-hoj-mysql}"
 

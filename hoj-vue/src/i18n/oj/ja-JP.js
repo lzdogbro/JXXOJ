@@ -196,6 +196,13 @@ export const m = {
   // /views/oj/user/Setting.vue
   Account_Setting: 'アカウント設定',
   UserInfo_Setting: 'プロフィール設定',
+  Parent_Binding: '保護者バインド',
+  Generate_Bind_Code: '保護者バインドコード生成',
+  Regenerate: '再生成',
+  Bind_Code_Description: 'WeChatでスキャンするか、ミニプログラムにこのコードを入力すると、保護者があなたのアカウントをバインドできます。',
+  Bind_Code_Expire_In: '有効期限',
+  Bind_Code_Scan_Tip: 'スキャンで自動バインド',
+  Bind_Code_Expired: 'バインドコードの有効期限が切れました。再生成してください',
 
   // App.vue フッターテキスト
   Service: 'サービス',

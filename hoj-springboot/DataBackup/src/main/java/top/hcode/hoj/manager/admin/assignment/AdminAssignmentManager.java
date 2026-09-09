@@ -24,6 +24,7 @@ import top.hcode.hoj.pojo.entity.user.UserInfo;
 import top.hcode.hoj.pojo.vo.AssignmentStudentVO;
 import top.hcode.hoj.pojo.vo.AssignmentVO;
 import top.hcode.hoj.shiro.AccountProfile;
+import top.hcode.hoj.service.wechat.WechatMessageService;
 import top.hcode.hoj.validator.AssignmentValidator;
 
 import javax.annotation.Resource;
@@ -63,6 +64,9 @@ public class AdminAssignmentManager {
 
     @Resource
     private AssignmentValidator assignmentValidator;
+
+    @Resource
+    private WechatMessageService wechatMessageService;
 
     public IPage<AssignmentVO> getAssignmentList(Integer limit, Integer currentPage, String keyword) {
         if (currentPage == null || currentPage < 1) currentPage = 1;
@@ -163,7 +167,8 @@ public class AdminAssignmentManager {
 
         // 直接发布（status=1）时展开成员写快照
         if (directPublish) {
-            publishMembers(assignment, assignmentDto.getGroupIdList(), assignmentDto.getExtraUidList());
+            publishMembers(assignment, assignmentDto.getGroupIdList(), assignmentDto.getExtraUidList(),
+                    assignmentDto.getExcludeUidList());
         }
 
         log.info("[{}],[{}],aid:[{}],operatorUid:[{}],operatorUsername:[{}]",
@@ -181,29 +186,24 @@ public class AdminAssignmentManager {
         }
         AssignmentAuthHelper.checkOwnerOrRoot(oldAssignment.getCreatorUid());
 
-        boolean isPublished = oldAssignment.getStatus() != null && oldAssignment.getStatus() == 1;
-
-        // 发布后仅可改标题/说明（题目集锁定，时间与必做状态不可改，延期走 extend）
+        // 未传字段保留原值，避免局部修改时静默清空必做状态/时间窗
         Assignment update = new Assignment().setId(oldAssignment.getId());
         update.setTitle(assignmentDto.getTitle());
         update.setDescription(assignmentDto.getDescription());
-        if (!isPublished) {
-            // 未传字段保留原值，避免局部修改时静默清空必做状态/时间窗
-            update.setIsRequired(assignmentDto.getIsRequired() != null
-                    ? assignmentDto.getIsRequired() : oldAssignment.getIsRequired());
-            update.setStartTime(assignmentDto.getStartTime() != null
-                    ? assignmentDto.getStartTime() : oldAssignment.getStartTime());
-            update.setEndTime(assignmentDto.getEndTime() != null
-                    ? assignmentDto.getEndTime() : oldAssignment.getEndTime());
-        }
+        update.setIsRequired(assignmentDto.getIsRequired() != null
+                ? assignmentDto.getIsRequired() : oldAssignment.getIsRequired());
+        update.setStartTime(assignmentDto.getStartTime() != null
+                ? assignmentDto.getStartTime() : oldAssignment.getStartTime());
+        update.setEndTime(assignmentDto.getEndTime() != null
+                ? assignmentDto.getEndTime() : oldAssignment.getEndTime());
 
         boolean isOk = assignmentEntityService.updateById(update);
         if (!isOk) {
             throw new StatusFailException("修改失败！");
         }
 
-        // 草稿阶段可改题目集
-        if (!isPublished) {
+        // 草稿与已发布作业均可修改题目集；仅当显式传入题目列表时才替换，避免局部修改误清空题目集
+        if (assignmentDto.getProblemList() != null) {
             replaceProblems(oldAssignment.getId(), assignmentDto.getProblemList());
         }
 
@@ -233,7 +233,8 @@ public class AdminAssignmentManager {
         }
 
         // 展开成员写快照
-        publishMembers(assignment, assignmentDto.getGroupIdList(), assignmentDto.getExtraUidList());
+        publishMembers(assignment, assignmentDto.getGroupIdList(), assignmentDto.getExtraUidList(),
+                assignmentDto.getExcludeUidList());
 
         boolean isOk = assignmentEntityService.updateById(new Assignment()
                 .setId(assignment.getId())
@@ -313,9 +314,10 @@ public class AdminAssignmentManager {
     }
 
     /**
-     * 展开学生组成员 + 手动追加的学生 -> 写入 assignment_student 快照
+     * 展开学生组成员 + 手动追加的学生，剔除排除名单 -> 写入 assignment_student 快照
      */
-    private void publishMembers(Assignment assignment, List<Long> groupIdList, List<String> extraUidList)
+    private void publishMembers(Assignment assignment, List<Long> groupIdList, List<String> extraUidList,
+                                List<String> excludeUidList)
             throws StatusForbiddenException, StatusFailException {
 
         boolean isRoot = SecurityUtils.getSubject().hasRole("root");
@@ -344,6 +346,11 @@ public class AdminAssignmentManager {
 
         if (extraUidList != null) {
             uidSet.addAll(extraUidList);
+        }
+
+        // 剔除排除名单（这些学生不布置该作业）
+        if (excludeUidList != null) {
+            uidSet.removeAll(excludeUidList);
         }
 
         // 校验快照学生账号均存在，避免外键异常
@@ -376,6 +383,11 @@ public class AdminAssignmentManager {
         }
         if (!toInsert.isEmpty()) {
             assignmentStudentEntityService.saveBatch(toInsert);
+        }
+
+        // 发布成功 → 异步推送微信订阅通知（新作业）
+        if (!uidSet.isEmpty()) {
+            wechatMessageService.notifyAssignmentPublish(assignment, new ArrayList<>(uidSet));
         }
     }
 

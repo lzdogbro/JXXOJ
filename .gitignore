@@ -49,6 +49,7 @@ logs/
 # ========== Node.js ==========
 node_modules/
 dist/
+dist.bak.root-owned/
 .npm/
 npm-debug.log*
 yarn-debug.log*

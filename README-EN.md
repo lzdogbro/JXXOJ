@@ -73,15 +73,19 @@ Direct one-on-one messaging between users, complementing the existing notificati
 
 ### Assignment (Course Homework)
 
-A new "Assignment" entry (route `/assignment`) for publishing and submitting course homework. Student-facing frontend and submission pipeline are complete; the admin side currently exposes backend APIs only (admin UI pending).
+A new "Assignment" entry (route `/assignment`) for publishing and submitting course homework. Student-facing and admin-facing frontend plus the submission pipeline are complete.
 
 - **Student side**: Assignment list, detail (title, required/optional, time window, progress bar), problem list (per-problem AC status), in-assignment submission
+- **Admin side**: Student-group management (CRUD, add/remove members), assignment management (create draft / one-step publish / edit / publish / extend / delete)
+- **Targets**: Distribute to student groups (multi-select) + manually add students, and optionally exclude individual students from the group (excluded students are not assigned)
+- **Post-publish editing**: Published assignments can still be edited — title / description / required flag / time window / problem set (publish status unchanged, prior submissions unaffected)
 - **Completion**: AC-based — a problem counts as completed once AC'd; the completion snapshot is frozen at publish time and not rewritten by later submissions
 - **Time window**: Start/end times derived dynamically (not started / running / ended), no scheduled tasks
-- **Admin (backend API)**: Student-group management (CRUD, add/remove members), assignment management (CRUD, publish, extend)
 - **Permission isolation**: root sees all, admin sees only their own assignments, problem_admin is read-only
 
-> 📌 **Todo**: Phase 3 navbar flash notification (unfinished-count polling), Phase 4 WeChat API and parent binding (see `docs/作业功能设计.md`).
+> 📌 **Done**: Phase 3 navbar badge + unfinished-count flash notification (polling endpoint `/api/get-assignment-unfinished-count`).
+>
+> 📌 **Todo**: Phase 4 WeChat API and parent binding (see `docs/作业功能设计.md`).
 
 > 📌 **Note**: Upgrading to the version with PK, Private Chat, and Assignment requires the SQL migration scripts `sqlAndsetting/hoj-pk-chat-update.sql` (PK battle + private chat) and `sqlAndsetting/hoj-assignment-update.sql` (assignment — 7 new tables + `aid` column in `judge`). `deploy.sh` applies them automatically; for manual upgrades, run them in order.
 
@@ -139,6 +143,7 @@ A new "Assignment" entry (route `/assignment`) for publishing and submitting cou
 | 2026-06-18 | **Added PK Battle**: 1v1 real-time coding duel, 20-min limit, scoring system | lzdogbro |
 | 2026-09-02 | **Training/Forum refactor**: training renamed to problem lists, discussion renamed to forum, new assignment nav entry | lzdogbro |
 | 2026-09-03 | **Assignment**: student groups, publish/submit pipeline, AC-based completion; deploy.sh supports multi-migration + JudgeServer hot-swap | lzdogbro |
+| 2026-09-09 | **Assignment enhancements**: published assignments fully editable (title/description/required/time window/problem set); exclude individual students from a group when distributing | lzdogbro |
 
 ---
 

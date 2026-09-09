@@ -8,6 +8,8 @@ import top.hcode.hoj.dao.assignment.AssignmentStudentEntityService;
 import top.hcode.hoj.mapper.AssignmentStudentMapper;
 import top.hcode.hoj.pojo.entity.assignment.AssignmentStudent;
 import top.hcode.hoj.pojo.vo.AssignmentStudentVO;
+import top.hcode.hoj.pojo.vo.WechatSubmitVO;
+import top.hcode.hoj.service.wechat.WechatMessageService;
 
 import javax.annotation.Resource;
 import java.util.Date;
@@ -22,6 +24,9 @@ public class AssignmentStudentEntityServiceImpl extends ServiceImpl<AssignmentSt
     @Resource
     private AssignmentStudentMapper assignmentStudentMapper;
 
+    @Resource
+    private WechatMessageService wechatMessageService;
+
     @Override
     public List<AssignmentStudentVO> getAssignmentStudentList(Long aid) {
         return assignmentStudentMapper.getAssignmentStudentList(aid);
@@ -30,6 +35,11 @@ public class AssignmentStudentEntityServiceImpl extends ServiceImpl<AssignmentSt
     @Override
     public List<Long> getAcceptedPidsByAidUid(Long aid, String uid, int acceptedStatus) {
         return assignmentStudentMapper.getAcceptedPidsByAidUid(aid, uid, acceptedStatus);
+    }
+
+    @Override
+    public List<WechatSubmitVO> getSubmittedPidsByAidUid(Long aid, String uid) {
+        return assignmentStudentMapper.getSubmittedPidsByAidUid(aid, uid);
     }
 
     @Override
@@ -51,7 +61,11 @@ public class AssignmentStudentEntityServiceImpl extends ServiceImpl<AssignmentSt
                     .setStatus(completed ? 1 : 0)
                     .setScore(0)
                     .setGmtFinish(completed ? new Date() : null));
+            if (completed) {
+                wechatMessageService.notifyAssignmentDone(aid, uid);
+            }
         } else {
+            boolean wasCompleted = existing.getStatus() != null && existing.getStatus() == 1;
             UpdateWrapper<AssignmentStudent> updateWrapper = new UpdateWrapper<>();
             updateWrapper.eq("aid", aid).eq("uid", uid)
                     .set("accepted_count", acceptedCount)
@@ -62,6 +76,10 @@ public class AssignmentStudentEntityServiceImpl extends ServiceImpl<AssignmentSt
                 updateWrapper.set("gmt_finish", null);
             }
             update(updateWrapper);
+            // 未完成 → 完成 翻转时推送微信订阅通知
+            if (completed && !wasCompleted) {
+                wechatMessageService.notifyAssignmentDone(aid, uid);
+            }
         }
     }
 }

@@ -124,3 +124,11 @@ logging:
   config: classpath:logback-spring.xml
   file:
     path: /hoj/log/backend
+
+# 微信小程序配置（appid/secret/订阅模板 id，从环境变量注入）
+hoj:
+  wechat:
+    appid: ${WECHAT_APPID:}
+    secret: ${WECHAT_SECRET:}
+    template-publish: ${WECHAT_TMPL_PUBLISH:}
+    template-done: ${WECHAT_TMPL_DONE:}

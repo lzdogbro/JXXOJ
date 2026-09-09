@@ -3,6 +3,7 @@ package top.hcode.hoj.dao.assignment;
 import com.baomidou.mybatisplus.extension.service.IService;
 import top.hcode.hoj.pojo.entity.assignment.AssignmentStudent;
 import top.hcode.hoj.pojo.vo.AssignmentStudentVO;
+import top.hcode.hoj.pojo.vo.WechatSubmitVO;
 
 import java.util.List;
 
@@ -21,6 +22,8 @@ public interface AssignmentStudentEntityService extends IService<AssignmentStude
      * @param acceptedStatus AC 状态码（Constants.Judge.STATUS_ACCEPTED）
      */
     List<Long> getAcceptedPidsByAidUid(Long aid, String uid, int acceptedStatus);
+
+    List<WechatSubmitVO> getSubmittedPidsByAidUid(Long aid, String uid);
 
     /**
      * 重算某学生在某作业的完成情况（AC 制：accepted_count >= 题目总数 即完成）

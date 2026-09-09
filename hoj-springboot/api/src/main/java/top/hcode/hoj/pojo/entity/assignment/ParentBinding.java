@@ -37,8 +37,14 @@ public class ParentBinding implements Serializable {
     @ApiModelProperty(value = "一次性绑定码")
     private String bindCode;
 
-    @ApiModelProperty(value = "0待确认 1已绑定 2已解绑")
+    @ApiModelProperty(value = "0待确认 1已绑定 2已解绑 3已失效")
     private Integer status;
+
+    @ApiModelProperty(value = "绑定码过期时间")
+    private Date gmtExpire;
+
+    @ApiModelProperty(value = "校验失败次数")
+    private Integer attemptCount;
 
     @TableField(fill = FieldFill.INSERT)
     private Date gmtCreate;

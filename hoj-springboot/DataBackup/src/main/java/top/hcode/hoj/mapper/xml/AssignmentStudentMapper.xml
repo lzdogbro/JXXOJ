@@ -31,4 +31,13 @@
     <select id="getAcceptedPidsByAidUid" resultType="long">
         SELECT DISTINCT pid FROM judge WHERE aid = #{aid} AND uid = #{uid} AND status = #{acceptedStatus}
     </select>
+
+    <resultMap id="map_WechatSubmit" type="top.hcode.hoj.pojo.vo.WechatSubmitVO">
+        <result column="pid" property="pid"></result>
+        <result column="submit_time" property="submitTime"></result>
+    </resultMap>
+
+    <select id="getSubmittedPidsByAidUid" resultMap="map_WechatSubmit">
+        SELECT pid, MAX(submit_time) AS submit_time FROM judge WHERE aid = #{aid} AND uid = #{uid} GROUP BY pid
+    </select>
 </mapper>

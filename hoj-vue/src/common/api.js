@@ -743,6 +743,10 @@ const ojApi = {
       data
     })
   },
+  // 生成家长绑定码（平台学生登录态）
+  generateBindCode() {
+    return ajax("/api/wechat/bind-code", 'post')
+  },
 
   // 讨论页相关请求
   getCategoryList() {

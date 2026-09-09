@@ -120,3 +120,11 @@ logging:
     root: info
   file:
     path: ./hoj_backend
+
+# 微信小程序配置（appid/secret/订阅模板 id，开发环境填真实值）
+hoj:
+  wechat:
+    appid: your_wechat_appid
+    secret: your_wechat_secret
+    template-publish: your_template_publish_id
+    template-done: your_template_done_id

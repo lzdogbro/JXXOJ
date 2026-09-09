@@ -196,6 +196,13 @@ export const m = {
   // /views/oj/user/Setting.vue
   Account_Setting: '帳戶設定',
   UserInfo_Setting: '資料設定',
+  Parent_Binding: '家長綁定',
+  Generate_Bind_Code: '生成家長綁定碼',
+  Regenerate: '重新生成',
+  Bind_Code_Description: '用微信掃碼，或在微信小程序裏輸入此綁定碼，即可讓家長綁定你的賬號。',
+  Bind_Code_Expire_In: '有效期',
+  Bind_Code_Scan_Tip: '掃碼自動綁定',
+  Bind_Code_Expired: '綁定碼已過期，請重新生成',
 
   // App.vue 底部文案
   Service: '服務',

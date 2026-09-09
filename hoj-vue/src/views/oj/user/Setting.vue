@@ -13,21 +13,30 @@
         </template>
         <component :is="UserInfo"></component>
       </el-collapse-item>
+      <el-collapse-item name="ParentBinding">
+        <template slot="title">
+          <i class="fa fa-weixin"> {{ $t('m.Parent_Binding') }}</i>
+        </template>
+        <component :is="ParentBinding"></component>
+      </el-collapse-item>
     </el-collapse>
   </el-card>
 </template>
 <script>
 const Account = () => import('@/components/oj/setting/Account');
 const UserInfo = () => import('@/components/oj/setting/UserInfo');
+const ParentBinding = () => import('@/components/oj/setting/ParentBinding');
 export default {
   components: {
     Account,
     UserInfo,
+    ParentBinding,
   },
   data() {
     return {
       Account: 'Account',
       UserInfo: 'UserInfo',
+      ParentBinding: 'ParentBinding',
       activeName: 'Account',
     };
   },
